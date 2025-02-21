@@ -1,0 +1,10 @@
+# environment
+.env/
+physioex/
+
+# data
+data/
+
+# error files from job execution
+*.err
+*.out
