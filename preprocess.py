@@ -1,13 +1,10 @@
-import pkgutil
-import physioex
-
-from physioex.physioex.preprocess.hmc import HMCPreprocessor  
+from physioex.physioex.preprocess.sleepedf import SLEEPEDFPreprocessor  
 
 # Define preprocessing functions, it's just a Callable method on each signal
 from physioex.physioex.preprocess.utils.signal import  xsleepnet_preprocessing
 
 # Initialize Preprocessor
-preprocessor = HMCPreprocessor(
+preprocessor = SLEEPEDFPreprocessor(
     preprocessors_name = ["xsleepnet"], # the name of the preprocessor
     preprocessors = [xsleepnet_preprocessing], # the callable preprocessing method
     preprocessor_shape = [[4, 29, 129]], # the output of the signal after preprocessing, 
