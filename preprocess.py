@@ -8,7 +8,7 @@ preprocessor = SLEEPEDFPreprocessor(
     preprocessors_name = ["xsleepnet"], # the name of the preprocessor
     preprocessors = [xsleepnet_preprocessing], # the callable preprocessing method
     preprocessor_shape = [[3, 29, 129]], # the output of the signal after preprocessing, the first element depends on the number of channels
-    data_folder = "./data"
+    data_folder = "/work3/s241931/data/"
 )
 
 # Run preprocessing
