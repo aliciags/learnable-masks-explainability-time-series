@@ -1,12 +1,13 @@
 model_config: 
-    loss_call : physioex.train.networks.utils.loss:CrossEntropyLoss
-    loss_params : {}
+    loss : physioex.train.networks.utils.loss:CrossEntropyLoss
+    loss_kwargs : {}
     sequence_length: 21
     n_classes: 5
     in_channels: 1
     sf: 100
     n_times: 3000
     learning_rate: 1e-4
+    weight_decay: 1e-4
     adam_beta_1: 0.9
     adam_beta_2: 0.999
     adam_epsilon: 1e-8

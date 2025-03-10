@@ -12,4 +12,4 @@
 source /zhome/2b/8/212341/learnable-masks-explainability-time-series/.env/bin/activate
 
 # Run the Python script
-python3 preprocess.py
+python3 train.py
