@@ -1,0 +1,13 @@
+# not really using GPU so
+- reduced number of workers to 10 (instead of default to 24) - train.py
+- increased the number of cores to 12 (n) - train.sh 
+
+# if still really slow
+- reduce the batch_size from 64 to 32
+- increase the learning rate from 1e-4 to 1e-3
+- eventually also reduce the latent space from 32 to maybe 24 or 26, but is this worse than other two options
+
+# change to params of chambon paper
+- batch size 128
+- learning 0.001
+

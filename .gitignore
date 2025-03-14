@@ -11,3 +11,4 @@ data/
 
 # model output
 model/
+lightning_logs/
