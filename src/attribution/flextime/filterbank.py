@@ -72,7 +72,7 @@ class Filterbank:
         Parameters
         ----------
         data : np.ndarray
-            Input data with shape (N, T) where N is number of sequences, T is number of time points.
+            Input data with shape (N, C, T) where N is number of sequences, C the number of channels, T is number of time points.
         time_axis : int
             The time axis of the data.
 
