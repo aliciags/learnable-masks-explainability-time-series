@@ -10,5 +10,5 @@ data/
 *.out
 
 # models and logs
-models/
+model/
 lightning_logs/
