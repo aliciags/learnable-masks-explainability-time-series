@@ -10,5 +10,4 @@ data/
 *.out
 
 # model output
-model/
 lightning_logs/
