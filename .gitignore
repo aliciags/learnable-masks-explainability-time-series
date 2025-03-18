@@ -8,6 +8,3 @@ data/
 # error files from job execution
 *.err
 *.out
-
-# model output
-lightning_logs/
