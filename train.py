@@ -3,9 +3,9 @@ import os
 import yaml
 import importlib
 
-from physioex.train.utils import train, test
-from physioex.data import PhysioExDataModule
-from physioex.train.models.load import load_model
+from physioex.physioex.train.utils import train, test
+from physioex.physioex.data import PhysioExDataModule
+from physioex.physioex.train.models.load import load_model
 
 
 target_package = "physioex.train.networks.utils.target_transform"
