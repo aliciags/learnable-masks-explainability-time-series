@@ -13,8 +13,9 @@ class FLEXtimeMask():
         self.device = device
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
-    def fit(self, data, use_only_max: bool = True):
+    def fit(self, data, stopping: float = 1.0e-6, use_only_max: bool = True):
         self.model.eval()
+        early_stopping_counter = 0
 
         # to disable gradient computation for save memory and speed up process
         with torch.no_grad():
@@ -27,11 +28,12 @@ class FLEXtimeMask():
             if use_only_max:
                 # instead of probs target is class indices for each sample of max prob
                 target = torch.argmax(target, dim=1)
+            
 
-        # initialize mask
+        # initialize mask to 0.5
         mask_shape = torch.tensor(data.shape)
         mask_shape[-1] = 1
-        mask = torch.ones((*mask_shape, self.filterbank.n_filters), device=self.device)
+        mask = 0.5*torch.ones((*mask_shape, self.filterbank.n_filters), device=self.device)
         mask.requires_grad = True
 
         # optimizer
@@ -40,9 +42,14 @@ class FLEXtimeMask():
         # precompute filterbank output
         data_bands = self.filterbank.apply_filterbank(data.cpu().numpy())
         data_bands = torch.tensor(data_bands).float().to(self.device).reshape(*data.shape, self.filterbank.n_filters)
+        # shape (1, time_len, n_filters)
+        # print(f"Data bands shape {data_bands.shape}")
+
+
+        l = float('inf')
 
         # training loop
-        for epoch in range(100):
+        for epoch in range(500):
             optimizer.zero_grad()
 
             # apply mask and sum over filter dimension
@@ -68,8 +75,16 @@ class FLEXtimeMask():
             # clip mask values to [0, 1]
             mask.data = torch.clamp(mask, 0, 1)
 
-            if epoch % 10 == 0:
+            if epoch % 100 == 0:
                 print(f'Epoch {epoch} Loss {loss.item()}')
+
+            if stopping is not None:
+                if abs(l - loss.item()) < stopping:
+                    early_stopping_counter += 1
+                l = loss.item()
+                if early_stopping_counter > 10:
+                    break
+
 
         return mask
 

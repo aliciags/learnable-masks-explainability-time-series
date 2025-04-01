@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 
 class Filterbank:
-    def __init__(self, n_taps: int,  n_filters: int, sample_freq, bandwidth: float = None):
+    def __init__(self, n_taps: int,  n_filters: int, sample_freq: int, time_len: int, bandwidth: float = None):
         # check inputs
         assert n_taps > 0, "Number of taps must be greater than 0"
         assert n_taps % 2 == 1, "Number of taps must be odd for best symmetry"
@@ -15,6 +15,8 @@ class Filterbank:
         self.n_taps = n_taps
         self.n_filters = n_filters
         self.sample_freq = sample_freq
+        self.group_delay = (n_taps - 1) // 2  # filter is symmetric
+        self.time_len = time_len
         self.bank = []
 
         if bandwidth is None:
@@ -65,7 +67,7 @@ class Filterbank:
         plt.ylabel("Gain")
         plt.show()
 
-    def apply_filterbank(self, data, time_axis: int =-1):
+    def apply_filterbank(self, data, time_axis: int =-1, adjust_delay: bool = True):
         """
         Apply filterbank to data.
         
@@ -84,10 +86,69 @@ class Filterbank:
         # apply filterbank to data
         y = np.zeros((*data.shape, self.n_filters))
         for i, h in enumerate(self.bank):
-            y[..., i] = signal.lfilter(h, 1, data, axis=time_axis)
+            y_tmp = signal.lfilter(h, 1, data, axis=time_axis)
+            if adjust_delay:
+                y_tmp = np.roll(y_tmp, -self.group_delay, axis=time_axis)
+            y[..., i] = y_tmp
         return y 
     
-    def forward(self, data, mask = None, time_axis: int =-1):
+    def get_filter_response(self, mask = None):
+        """
+        Get the filter response based on the mask on the frequency domain.
+
+        Parameters
+        ----------
+        mask : np.ndarray
+            Mask with shape (N, T) or (T, ) to apply to the data.
+
+        Returns
+        -------
+        np.ndarray
+            The filter response.
+        """
+        worN = len(np.fft.rfftfreq(self.time_len, 1 / self.sample_freq))
+        if len(mask.shape) == 1:
+            mask = mask[np.newaxis, :]
+        response = np.zeros((worN, *mask.shape))
+        for i in range(mask.shape[0]):
+            for j, h in enumerate(self.bank):
+                w, h_response = signal.freqz(h, 1, worN=worN)
+                h_response = np.abs(h_response) * mask[i, j] if mask is not None else np.abs(h_response)
+                response[:, i, j] = h_response
+
+        return np.sum(response, axis=-1)
+    
+    def plot_filter_response(self, ax = None,  mask = None, time_axis: int =-1):
+        # I believe the wordN should be based on the mask if it passed so the multiplication can be computed
+        """
+        Plot the filter response based on the mask.
+
+        Parameters
+        ----------
+        mask : np.ndarray
+            Mask with shape (N, T) or (T, ) to apply to the data.
+        time_axis : int
+            The time axis of the data.
+        """
+        # set axis
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        # get the filter response
+        response = np.zeros((2000, self.n_filters))
+        for i, h in enumerate(self.bank):
+            w, h_response = signal.freqz(h, 1, worN=2000)
+            h_response = np.abs(h_response) * mask if mask is not None else np.abs(h_response)
+            response[:, i] = h_response
+        
+        # plot filter response
+        ax.plot((self.sample_freq * 0.5 / np.pi) * w, np.sum(response, axis=1))
+        ax.set_title("Filter Response")
+        ax.set_xlabel("Frequency (Hz)")
+        ax.set_ylabel("Gain")
+        plt.show()
+    
+    def forward(self, data, mask = None, time_axis: int =-1, adjust_delay: bool = True):
         """
         Apply filterbank to data and apply mask if provided.
 
@@ -107,7 +168,7 @@ class Filterbank:
             The output of the filterbank with mask applied summed over the filter dimension.
         """
         # apply filterbank to data
-        y = self.apply_filterbank(data, time_axis)
+        y = self.apply_filterbank(data, time_axis, adjust_delay)
 
         # apply mask if provided
         if mask is not None:
@@ -120,3 +181,5 @@ class Filterbank:
                 y = y * mask[:, np.newaxis, :]
 
         return np.sum(y, axis=-1)
+    
+    

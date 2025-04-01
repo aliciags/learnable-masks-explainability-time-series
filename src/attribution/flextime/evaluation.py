@@ -3,17 +3,45 @@ import numpy as np
 from src.attribution.flextime import Filterbank, FLEXtimeMask
 
 def compute_flextime_attribution(model, 
-                                 data, 
-                                 filterbank_params = {'n_taps': 501, 'n_filters': 64, 'smaple_freq': 8000}, 
+                                 dataloader, 
+                                 filterbank_params = {'n_taps': 501, 'n_filters': 64, 'sample_freq': 8000, 'time_len': 1}, 
                                  device = 'cpu'):
     # define mask
-    mask = []
+    masks = []
+    scores = []
 
-    
     # create filterbank
     filterbank = Filterbank(**filterbank_params)
     
     # create FLEXtime mask
-    mask_opt = FLEXtimeMask(model, filterbank, device=device)
-    mask.fit(data)
-    return mask.get_mask()
+    mask_opt = FLEXtimeMask(model, filterbank, device=device)    
+
+    for i, batch in enumerate(dataloader):
+        batch_scores = []
+        filter_batch_scores = []
+
+        # compute the batch scores
+        print(f"Batch {i} of {len(dataloader)}")
+
+        for j, (x, y) in enumerate(zip(*batch)):
+            print(f"Sample {j} of {len(batch[0])}")
+            # x, y = batch
+            x = x.to(device)
+            y = y.to(device)
+            
+            # get the attribution mask
+            mask = mask_opt.fit(x)
+            mask = mask.squeeze().cpu().detach().numpy() # shape (n_filters, )
+
+            # normalize 
+            imp = torch.tensor(filterbank.get_filter_response(mask)) # shape (1, 1)
+
+            batch_scores.append(imp)
+            filter_batch_scores.append(mask)
+
+
+        # store the data
+        masks.append(torch.stack(batch_scores)) # shape (batch_len, 1, 1)
+        scores.append(np.stack(filter_batch_scores))  # shape (batch_len, n_filters)
+        
+    return masks, scores
