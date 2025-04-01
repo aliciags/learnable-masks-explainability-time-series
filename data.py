@@ -14,14 +14,14 @@ freqs = [5, 20]     # salient frequencies
 times = [7, 21]     # salient times
 ampls = [1, 0.7]    # amplitudes
 
-folder = "./data/synthetic/"
+folder = "./data/synthetic/test/"
 
 # create the folder if it does not exist
 if not os.path.exists(folder):
     os.makedirs(folder)
 
 
-for i in range(5):
+for i in range(2):
     # generate five sequences of samples
     samples_0 = [generate_signal(frequencies=freqs, times=times, amplitudes=ampls, fs=fs, T=T) for _ in range(num_samples)]
     samples_1 = [generate_signal(frequencies=freqs[::-1], times=times, amplitudes=ampls, fs=fs, T=T) for _ in range(num_samples)]
@@ -29,6 +29,3 @@ for i in range(5):
     # create the npy files
     np.save(folder + "samples_0_%d.npy" % i, samples_0)
     np.save(folder + "samples_1_%d.npy" % i, samples_1)
-
-# store the time sequence
-np.save(folder + "t.npy", t)
