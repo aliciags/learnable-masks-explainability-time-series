@@ -11,3 +11,119 @@
 - batch size 128
 - learning 0.001
 
+# changes in the physioEx library
+base.py line 41/42 num_classes= self.n_classes,
+
+test.py line 42     seq_length = model_config['sequence_length']
+and adding the seq length to the results names f"results-{seq_length}.csv" key+f"{seq_length}.png"
+
+train changing the model name also adding seq_length seq_length = str(model_config['sequence_length'])
+filename="fold=%d-{epoch}-{step}-{val_acc:.2f}" % fold + "-" + seq_length
+
+### changes in eval and flextime for dim adjustment in model
+
+    for i, batch in enumerate(dataloader):
+        batch_scores = []
+        filter_batch_scores = []
+
+        # compute the batch scores
+        print(f"Batch {i} of {len(dataloader)}")
+        print(f"batch dimensions {len(batch)}")
+        print(f"batch size {len(batch[0])}")
+
+        # for j, (x, y) in enumerate(zip(*batch)):
+        
+        # print(f"Sample {j} of {len(batch[0])}")
+        x, y = batch
+        x = x.to(device)
+        y = y.to(device)
+
+        # print(x.shape)
+
+        # get the attribution mask
+        mask, imp = mask_opt.fit(x)
+        # mask = mask.squeeze().cpu().detach().numpy() # shape (n_filters, )
+
+        # # normalize 
+        # imp = torch.tensor(filterbank.get_filter_response(mask)) # shape (1, 1)
+
+        # batch_scores.append(imp)
+        # filter_batch_scores.append(mask)
+
+        # store the data
+        masks.append(torch.stack(imp)) # shape (batch_len, 1, 1)
+        scores.append(np.stack(mask))  # shape (batch_len, n_filters)
+        
+    return masks, scores
+    
+
+    for j, sample in enumerate(data):
+            print(f"Sample {j} of {len(data)}")
+            early_stopping_counter = 0
+
+            # initialize mask to 0.5
+            mask_shape = torch.tensor(sample.shape)
+            mask_shape[-1] = 1
+            mask = 0.5*torch.ones((*mask_shape, self.filterbank.n_filters), device=self.device)
+            mask.requires_grad = True
+
+            # optimizer
+            optimizer = torch.optim.Adam([mask], lr=0.01)
+
+            # precompute filterbank output
+            data_bands = self.filterbank.apply_filterbank(sample.cpu().numpy())
+            data_bands = torch.tensor(data_bands).float().to(self.device).reshape(*sample.shape, self.filterbank.n_filters)
+            # shape (1, time_len, n_filters)
+            # print(f"Data bands shape {data_bands.shape}")
+
+
+            l = float('inf')
+
+            # training loop
+            for epoch in range(500):
+                optimizer.zero_grad()
+
+                # apply mask and sum over filter dimension
+                masked_data = (data_bands * mask).sum(-1)
+
+                # forward pass
+                output = self.model(masked_data)
+                output = torch.nn.functional.softmax(output, dim=1)
+
+                # calculate loss
+                loss = self.loss_fn(output, target[j])
+
+                # regularization assuming lambda = 1 in total loss
+                if self.regularization == 'l1':
+                    loss += mask.abs().sum()
+                elif self.regularization == 'l2':
+                    loss += mask.pow(2).sum()
+
+                # backward pass
+                loss.backward()
+                optimizer.step()
+
+                # clip mask values to [0, 1]
+                mask.data = torch.clamp(mask, 0, 1)
+
+                if epoch % 100 == 0:
+                    print(f'Epoch {epoch} Loss {loss.item()}')
+
+                if stopping is not None:
+                    if abs(l - loss.item()) < stopping:
+                        early_stopping_counter += 1
+                    l = loss.item()
+                    if early_stopping_counter > 10:
+                        break
+            
+            mask = mask.squeeze().cpu().detach().numpy()
+            imp = torch.tensor(self.filterbank.get_filter_response(mask))
+
+            masks.append(imp)
+            masks_response.append(mask)
+
+        return mask, masks_response
+
+
+
+

@@ -17,6 +17,8 @@ class FLEXtimeMask():
         self.model.eval()
         early_stopping_counter = 0
 
+        data = data.unsqueeze(0)
+
         # to disable gradient computation for save memory and speed up process
         with torch.no_grad():
             # target tensor with class logits
@@ -75,7 +77,7 @@ class FLEXtimeMask():
             # clip mask values to [0, 1]
             mask.data = torch.clamp(mask, 0, 1)
 
-            if epoch % 100 == 0:
+            if epoch % 10 == 0:
                 print(f'Epoch {epoch} Loss {loss.item()}')
 
             if stopping is not None:
