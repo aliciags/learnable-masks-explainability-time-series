@@ -57,18 +57,18 @@ def compute_batch_complexity_score(attribution):
     return np.mean(complexity_scores)
 
 # compute the localization of the attribution
-def compute_localization_score(attribution, data):
+def compute_localization_score(data, attribution, masks):
     """
     Compute the localization score of the attribution.
 
     Parameters
     ----------
-    model : torch.nn.Module
-        The model to be evaluated.
-    attribution : list
-        The attribution scores.
     data : list
         The data to be evaluated.
+    attribution : list
+        The attribution scores.
+    mask : list
+        The mask to be evaluated ?? - not sure might be ground truth??
 
     Returns
     -------
@@ -76,18 +76,20 @@ def compute_localization_score(attribution, data):
         The mean localization score.
     """
     # compute the localization score
-    localization = quantus.AttributionLocalisation(return_aggregate=True)
+    localization = quantus.AttributionLocalisation()
     localization_scores = []
 
+    # for each batch
     for i in range(len(attribution)):
-        attr_sample = attribution[i].flatten().numpy()
-        data_sample = data[i].flatten().numpy()
-        localization_scores.append(np.nan_to_num(localization.evaluate_instance(attr_sample, data_sample)))
+        batch = data[i].numpy()
+        attr = attribution[i].numpy()
+        mask = masks[i]
+        localization_scores.append(np.nan_to_num(localization.evaluate_batch(batch, attr, mask)))
 
     return np.mean(localization_scores)
 
 # compute the faithfullness of the attribution
-def compute_faithfullness_score(model, attribution, data):
+def compute_faithfullness_score(model, data, attributions, type: str = 'correlation'):
     """
     Compute the faithfullness score of the attribution.
 
@@ -95,10 +97,10 @@ def compute_faithfullness_score(model, attribution, data):
     ----------
     model : torch.nn.Module
         The model to be evaluated.
-    attribution : list
-        The attribution scores.
     data : list
         The data to be evaluated.
+    attribution : list
+        The attribution scores.
 
     Returns
     -------
@@ -106,12 +108,45 @@ def compute_faithfullness_score(model, attribution, data):
         The mean faithfullness score.
     """
     # compute the faithfullness score
-    faithfullness = quantus.Faithfulness(return_aggregate=True)
+    if type == 'estimate':
+        faithfullness = quantus.FaithfulnessEstimate()
+    else:
+        faithfullness = quantus.FaithfulnessCorrelation()
     faithfullness_scores = []
 
-    for i in range(len(attribution)):
-        attr_sample = attribution[i].flatten().numpy()
-        data_sample = data[i].flatten().numpy()
-        faithfullness_scores.append(np.nan_to_num(faithfullness.evaluate_instance(attr_sample, data_sample)))
+    for i in range(len(attributions)):
+        x, y = data[i]
+        attr = attributions[i].numpy()
+        faithfullness_scores.append(np.nan_to_num(faithfullness.evaluate_instance(model, x, y, attr)))
+
+    return np.mean(faithfullness_scores)
+
+# compute the faithfullness of the attribution
+def compute_faithfullness_est_score(model, data, attributions):
+    """
+    Compute the faithfullness score of the attribution.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The model to be evaluated.
+    data : list
+        The data to be evaluated.
+    attribution : list
+        The attribution scores.
+
+    Returns
+    -------
+    float
+        The mean faithfullness score.
+    """
+    # compute the faithfullness score
+    faithfullness = quantus.FaithfulnessEstimate()
+    faithfullness_scores = []
+
+    for i in range(len(attributions)):
+        x, y = data[i]
+        attr = attributions[i].numpy()
+        faithfullness_scores.append(np.nan_to_num(faithfullness.evaluate_instance(model, x, y, attr)))
 
     return np.mean(faithfullness_scores)

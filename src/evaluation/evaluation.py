@@ -73,7 +73,8 @@ def evaluate_attributions(model, loader, attribution, quantiles, mode = 'deletio
                 if mode == 'insertion':
                     masked_data = data * mask
                 elif mode == 'deletion':
-                    masked_data = data * (1 - mask)
+                    masked_data = data * (~mask)
+
                 else:
                     raise ValueError("mode must be 'insertion' or 'deletion'")
 
