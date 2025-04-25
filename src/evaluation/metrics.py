@@ -2,7 +2,7 @@ import quantus
 import numpy as np
 
 # compute the complexity of the attribution
-def compute_complexity_score(data, attribution):
+def compute_complexity_score_instance(data, attribution):
     """
     Compute the complexity score of the attribution per instance.
 
@@ -28,7 +28,7 @@ def compute_complexity_score(data, attribution):
 
     return np.mean(complexity_scores)
 
-def compute_batch_complexity_score(attribution):
+def compute_complexity_score(attribution):
     """
     Compute the complexity score of the attribution per batch.
 
@@ -112,36 +112,6 @@ def compute_faithfullness_score(model, data, attributions, type: str = 'correlat
         faithfullness = quantus.FaithfulnessEstimate()
     else:
         faithfullness = quantus.FaithfulnessCorrelation()
-    faithfullness_scores = []
-
-    for i in range(len(attributions)):
-        x, y = data[i]
-        attr = attributions[i].numpy()
-        faithfullness_scores.append(np.nan_to_num(faithfullness.evaluate_instance(model, x, y, attr)))
-
-    return np.mean(faithfullness_scores)
-
-# compute the faithfullness of the attribution
-def compute_faithfullness_est_score(model, data, attributions):
-    """
-    Compute the faithfullness score of the attribution.
-
-    Parameters
-    ----------
-    model : torch.nn.Module
-        The model to be evaluated.
-    data : list
-        The data to be evaluated.
-    attribution : list
-        The attribution scores.
-
-    Returns
-    -------
-    float
-        The mean faithfullness score.
-    """
-    # compute the faithfullness score
-    faithfullness = quantus.FaithfulnessEstimate()
     faithfullness_scores = []
 
     for i in range(len(attributions)):
