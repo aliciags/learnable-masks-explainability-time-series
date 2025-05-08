@@ -47,12 +47,16 @@ def compute_complexity_score(attribution):
     complexity_scores = []
 
     for i in range(len(attribution)):
-        print(f"shape before flattening: {attribution[i].shape}")
-        # attr_batch = attribution[i].flatten(start_dim=1).numpy()
-        attr_batch = attribution[i]
-        # print(f"shape after: {attr_batch.shape}")
+        attr_batch = attribution[i].squeeze(-1).detach().numpy().astype(np.float32)
+        print(attr_batch)
         attr_batch = np.maximum(attr_batch, 0)
-        complexity_scores += np.nan_to_num(complexity.evaluate_batch(attr_batch, attr_batch)).tolist()
+        print(attr_batch)
+        complexities = complexity.evaluate_batch(attr_batch, attr_batch)
+        print(complexities)
+        complexity_scores += np.nan_to_num(complexities).tolist()
+
+        if i == 3:
+            break
     
     return np.mean(complexity_scores)
 

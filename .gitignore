@@ -13,5 +13,7 @@ data/
 model/
 lightning_logs/
 
-# pkl files from hpc
+# pkl files from hpc and local
 public/sleepedf/*.pkl
+public/simple/*.pkl
+

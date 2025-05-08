@@ -25,23 +25,23 @@ def compute_flextime_attribution(model,
 
         for j, (x, y) in enumerate(zip(*batch)):
             print(f"Sample {j} of {len(batch[0])}")
-            # x, y = batch
+
             x = x.to(device)
             y = y.to(device)
             
             # get the attribution mask
-            mask = mask_opt.fit(x)
+            mask, loss = mask_opt.fit(x)
             mask = mask.squeeze().cpu().detach().numpy() # shape (n_filters, )
 
             # normalize 
-            imp = torch.tensor(filterbank.get_filter_response(mask)) # shape (1, 1)
+            imp = torch.tensor(filterbank.get_filter_response(mask)) # shape (N//2+1, 1)
 
             batch_scores.append(imp)
             filter_batch_scores.append(mask)
 
 
         # store the data
-        masks.append(torch.stack(batch_scores)) # shape (batch_len, 1, 1)
+        masks.append(torch.stack(batch_scores)) # shape (batch_len, N//2+1, 1)
         scores.append(np.stack(filter_batch_scores))  # shape (batch_len, n_filters)
         
     return masks, scores

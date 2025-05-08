@@ -1,9 +1,21 @@
+import pywt
 import torch
+import math
+import numpy as np
 import torch.nn.functional as F
 
-def evaluate_attributions(model, loader, attribution, quantiles, mode = 'deletion', device = 'cpu'):
+def evaluate_attributions(model, 
+                          loader, 
+                          attribution, 
+                          quantiles, 
+                          mode = 'deletion', 
+                          domain = 'fft',
+                          wavelet = 'db1', 
+                          device = 'cpu'):
     """
-    Evaluate the model using the given attribution and data.
+    Evaluation function used to assess how a model's predictions change when 
+    certain parts of the input are masked—either deleted or inserted—based on 
+    their importance.
 
     Parameters
     ----------
@@ -17,6 +29,8 @@ def evaluate_attributions(model, loader, attribution, quantiles, mode = 'deletio
         The quantiles to be evaluated.
     mode : str
         The mode of evaluation. Can be 'insertion' or 'deletion'.
+    domain : str
+        The domain of the data. Can be 'fft', 'wavelet' or 'time'.
     device : str
         The device to be used for evaluation.
 
@@ -43,10 +57,42 @@ def evaluate_attributions(model, loader, attribution, quantiles, mode = 'deletio
             mean_true_class_prob = 0
 
             for i, batch in enumerate(loader):
+                # assuming the batch is a tuple of samples and true labels
                 x, y = batch
+                # assuming the time dimension is the last dimension
                 time_dim = -1
+                time_len = len(x[0][0])
 
-                data = torch.fft.rfft(x, dim=time_dim).to(device)
+                print(f"shape of x: {x.shape}")
+
+                # print(f"Shape of x: {x.shape}")
+
+                if domain == 'fft':
+                    data = torch.fft.rfft(x, dim=time_dim).to(device)
+                elif domain == 'wavelet':
+                    # assuming one channel
+                    wavelet_transform = []
+                    coeffs = pywt.wavedec(x, wavelet)
+
+                    for i in range(len(coeffs)):  # iterate over levels
+                        level_list = []
+                        for j in range(len(coeffs[i])):  # batch size
+                            batch_list = []
+                            for k in range(len(coeffs[i][j])):  # channels
+                                signal = coeffs[i][j][k]
+                                factor = math.ceil(time_len / len(signal))
+                                upsampled = np.repeat(signal, factor)[:time_len]
+                                batch_list.append(upsampled)
+                            level_list.append(batch_list)
+                        wavelet_transform.append(level_list)
+
+                    wavelet_transform = np.moveaxis(np.array(wavelet_transform), 0, -1)
+                    data = torch.tensor(wavelet_transform).float().to(device)
+                    print(f"Data shape: {data.shape}")  
+
+                elif domain == 'time':
+                    data = x.to(device)
+                
                 shape = data.shape
 
                 # if attribution == 'random':
@@ -55,7 +101,7 @@ def evaluate_attributions(model, loader, attribution, quantiles, mode = 'deletio
                 #     imp = torch.abs(data)
                 # else:
                     
-                imp = attribution[i].reshape(shape).to(device)
+                imp = attribution[i].reshape(shape).to(torch.float32).to(device)
 
                 # flatten data and compute quantile
                 flattened_imp = imp.reshape(shape[0], -1)
@@ -77,8 +123,26 @@ def evaluate_attributions(model, loader, attribution, quantiles, mode = 'deletio
 
                 else:
                     raise ValueError("mode must be 'insertion' or 'deletion'")
+                
 
-                data = torch.fft.irfft(masked_data, dim=time_dim).to(device)
+                if domain == 'fft':
+                    data = torch.fft.irfft(masked_data, dim=time_dim).to(device)
+                elif domain == 'wavelet':
+                    # downsample the data to the original size
+                    masked_data == masked_data[::-1]
+                    masked_downsampled = []
+                    for i, coeff in enumerate(masked_data):
+                        if i == len(masked_data) - 1:
+                            b = b[1::(2**(i))]
+                        else:
+                            b = b[1::(2**(i+1))]
+                        masked_downsampled.append(b)
+                    
+                    masked_downsampled = masked_downsampled[::-1]
+
+                    data = torch.tensor(pywt.waverec(masked_downsampled, wavelet).to(device))
+
+
                 output = model(data.float()).detach().cpu()
 
                 _, predicted = torch.max(output, 1)
@@ -86,6 +150,10 @@ def evaluate_attributions(model, loader, attribution, quantiles, mode = 'deletio
                 correct += (predicted == y).sum().item()
                 ce_loss += F.cross_entropy(output, y).item()/len(batch)
                 mean_true_class_prob += torch.take_along_dim(F.softmax(output, dim=1), y.unsqueeze(1), dim = 1).sum().item()
+
+                if len(attribution) != len(loader):
+                    # if the attribution is not the same length as the loader, break
+                    break
 
             accuracies.append(correct / total)
             ce_losses.append(ce_loss)
