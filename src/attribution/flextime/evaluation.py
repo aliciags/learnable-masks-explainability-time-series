@@ -5,7 +5,8 @@ from src.attribution.flextime import Filterbank, FLEXtimeMask
 def compute_flextime_attribution(model, 
                                  dataloader, 
                                  filterbank_params = {'n_taps': 501, 'n_filters': 64, 'sample_freq': 8000, 'time_len': 1}, 
-                                 device = 'cpu'):
+                                 device = 'cpu', 
+                                 verbose = True):
     # define mask
     masks = []
     scores = []
@@ -30,7 +31,7 @@ def compute_flextime_attribution(model,
             y = y.to(device)
             
             # get the attribution mask
-            mask, loss = mask_opt.fit(x)
+            mask, loss = mask_opt.fit(x, verbose=verbose)
             mask = mask.squeeze().cpu().detach().numpy() # shape (n_filters, )
 
             # normalize 

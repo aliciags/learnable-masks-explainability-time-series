@@ -5,7 +5,8 @@ from src.attribution.wavelet import WaveletFilterbank, WaveletMask
 def compute_wavelet_attribution( model, 
                                  dataloader, 
                                  filterbank_params = {'wavelet': 'db', 'w_len': 1, 'fs': 100, 'level': 5}, 
-                                 device = 'cpu'):
+                                 device = 'cpu', 
+                                 verbose = True):
     # define mask
     masks = []
     scores = []
@@ -36,7 +37,7 @@ def compute_wavelet_attribution( model,
             filterbank.apply_dwt_filterbank(singal)
             
             # get the attribution mask
-            mask, loss = mask_opt.fit(x)
+            mask, loss = mask_opt.fit(x, verbose=verbose)
             mask = mask.squeeze().cpu().detach().numpy() # shape (time, n_filters)
             print(f"Mask shape: {mask.shape}")
 
@@ -51,5 +52,7 @@ def compute_wavelet_attribution( model,
         # store the data
         masks.append(torch.stack(batch_scores)) # shape (batch_len, 1, 1)
         scores.append(np.stack(filter_batch_scores))  # shape (batch_len, n_filters)
+
+        break
 
     return masks, scores

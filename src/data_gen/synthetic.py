@@ -1,7 +1,7 @@
 import numpy as np
 
 # Function to generate varied signals for classification
-def generate_signal(frequencies, times, amplitudes, noise_level=0.1, jitter=0.2, fs: int = 100, T: int = 30, seed: int = 33):
+def generate_signal(frequencies, times, amplitudes, noise_level=0.1, jitter=0.2, fs: int = 100, T: int = 30):
     """
     Generate a signal with multiple frequency components at different times and amplitudes.
     
@@ -27,7 +27,6 @@ def generate_signal(frequencies, times, amplitudes, noise_level=0.1, jitter=0.2,
     signal : array
         The generated signal.
     """
-    np.random.seed(seed)  # For reproducibility
 
     N = fs * T  # Number of samples
     t = np.linspace(0, T, N)
