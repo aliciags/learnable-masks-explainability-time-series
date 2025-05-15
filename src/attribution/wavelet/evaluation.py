@@ -38,21 +38,20 @@ def compute_wavelet_attribution( model,
             
             # get the attribution mask
             mask, loss = mask_opt.fit(x, verbose=verbose)
+            # print(type(mask))
             mask = mask.squeeze().cpu().detach().numpy() # shape (time, n_filters)
-            print(f"Mask shape: {mask.shape}")
+            # print(f"Mask shape: {mask.shape}")
 
             # normalize 
-            imp = torch.tensor(filterbank.get_filter_response(mask)) # shape (1, 1)
-            print(f"Imp shape: {imp.shape}")
+            imp = torch.tensor(filterbank.get_filter_response(mask)) # shape (channels, time, n_filters)
+            # print(f"Imp shape: {imp.shape}")
 
             batch_scores.append(imp)
             filter_batch_scores.append(mask)
 
 
         # store the data
-        masks.append(torch.stack(batch_scores)) # shape (batch_len, 1, 1)
-        scores.append(np.stack(filter_batch_scores))  # shape (batch_len, n_filters)
-
-        break
+        masks.append(torch.stack(batch_scores)) # shape (batch_len, channels, time, n_filters)
+        scores.append(np.stack(filter_batch_scores))  # shape (batch_len, time, n_filters)
 
     return masks, scores

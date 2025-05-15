@@ -3,7 +3,7 @@ import pywt
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import upfirdn, freqz
+from scipy.signal import upfirdn, freqz, convolve
 from src.utils.sampling import upsampling_wavedec
 
 
@@ -37,10 +37,10 @@ class WaveletFilterbank():
         self.fs = fs
         self.data = None
         self.time = None
-        self.nfilters = 0
+        self.nbanks = 0
         self.banks = []
 
-        self._create_filterbank
+        # self._create_filterbank()
 
     def _upsample_filter(self, filt, level):
         """
@@ -49,11 +49,12 @@ class WaveletFilterbank():
         up_factor = 2 ** (level - 1)
         return upfirdn([1], filt, up=up_factor)
     
-    def _create_filters(self):
+    def _create_filterbank(self):
         """
         Create dyadically upsampled filters (hi-pass at each level + final low-pass).
+        NOT FULLY DWT TREE since not downsampling (future problem)
         """
-        wavelet = pywt.Wavelet(self.wavelet_name)
+        wavelet = pywt.Wavelet(self.wavelet)
         dec_lo = np.array(wavelet.dec_lo)  # Low-pass
         dec_hi = np.array(wavelet.dec_hi)  # High-pass
 
@@ -65,24 +66,39 @@ class WaveletFilterbank():
         h_lo = self._upsample_filter(dec_lo, self.level)
         self.banks.append({'level': self.level, 'type': 'lowpass', 'filter': h_lo})
 
-        self.nfilters = len(self.banks)
+        self.nbanks = len(self.banks)
 
     def apply_filterbank(self, x):
+        ## Maybe is better to use conv1D with tensors but rn it seems to complex
         """
         Apply the wavelet FIR filterbank to signal x.
         Returns y with shape: (len(x), n_filters)
         """
-        x = np.asarray(x)
-        y = np.zeros((len(x), len(self.banks)))
+        x = x.cpu().numpy() if isinstance(x, torch.Tensor) else x
+        y = np.zeros((*x.shape, self.nbanks))
+
+        # print(f"Shape of x: {x.shape}")
+        # print(self.nbanks)
+        # print(f"Shape of y: {y.shape}")
+
+        # for i, bank in enumerate(self.banks):
+        #     h = bank['filter']
+        #     filtered = convolve(x, h[None, :], mode='full') # to broadcast over channels
+        #     # Adjust to match input length if needed
+        #     if len(filtered) != len(x):
+        #         center = (len(filtered) - len(x)) // 2
+        #         filtered = filtered[center:center+len(x)]
+        #     y[:, i] = filtered
 
         for i, bank in enumerate(self.banks):
             h = bank['filter']
-            filtered = np.convolve(x, h, mode=self.mode)
-            # Adjust to match input length if needed
-            if len(filtered) != len(x):
-                center = (len(filtered) - len(x)) // 2
-                filtered = filtered[center:center+len(x)]
-            y[:, i] = filtered
+            for channel_id, channel in enumerate(x):
+                filtered = np.convolve(channel, h, mode='full')
+                # Crop to match original length
+                if len(filtered) != len(channel):
+                    center = (len(filtered) - len(channel)) // 2
+                    filtered = filtered[center:center+len(channel)]
+                y[channel_id, :, i] = filtered
 
         return y    
 
@@ -104,8 +120,8 @@ class WaveletFilterbank():
 
         self.coeffs = pywt.wavedec(self.data, self.wavelet, level=self.level)
         # removing the approximation coefficients since they are the same as the last iteration of detailed coeffs
-        self.coeffs = self.coeffs[1:]
-        self.nfilters = len(self.coeffs)
+        # self.coeffs = self.coeffs[1:]
+        self.nbanks = len(self.coeffs)
 
     def get_dwt_coeffs(self):
         """
@@ -142,11 +158,11 @@ class WaveletFilterbank():
             h = bank['filter']
             w, H = freqz(h, worN=2048, fs=self.fs)
             label = f"Level {bank['level']} ({bank['type']})"
-            plt.plot(w, 20 * np.log10(np.abs(H) + 1e-8), label=label)  # dB scale
+            plt.plot((self.fs * 0.5 / np.pi) * w, H, label=label)
 
-        plt.title(f"Wavelet Filterbank Frequency Response ({self.wavelet_name})")
+        plt.title(f"Wavelet Filterbank Frequency Response ({self.wavelet})")
         plt.xlabel("Frequency [Hz]" if self.fs != 1.0 else "Normalized Frequency [×π rad/sample]")
-        plt.ylabel("Magnitude [dB]")
+        plt.ylabel("Gain")
         # plt.grid(True, which='both', linestyle='--', alpha=0.5)
         plt.legend()
         plt.tight_layout()
@@ -216,6 +232,40 @@ class WaveletFilterbank():
         response = upsampled_coeffs * mask if mask is not None else upsampled_coeffs
         
         return response # .sum(axis=-1)
+    
+    def get_collect_filter_response(self, mask=None):
+        """
+        Compute the collective frequency response of the wavelet filterbank,
+        optionally modulated by a learned mask.
+
+        Parameters
+        ----------
+        mask : np.ndarray or None
+            A mask with shape (n_samples, n_filters) or (n_filters,). If None, all filters are unmasked.
+
+        Returns
+        -------
+        np.ndarray
+            Combined frequency response per sample. Shape: (n_freq_bins, n_samples)
+        """
+        worN = len(np.fft.rfftfreq(self.fs, 1/self.fs))  # Frequency bins for FFT
+        mask = np.array(mask) if mask is not None else np.ones((1, self.nbanks))
+        
+        if mask.ndim == 1:
+            mask = mask[np.newaxis, :]  # Make shape (1, n_filters)
+
+        n_samples = mask.shape[0]
+        collect_freq_resp = np.zeros((worN, n_samples, self.nbanks))
+
+        for i, bank in enumerate(self.banks):
+            h = bank['filter']
+            w, H = freqz(h, worN=worN, fs=self.fs)
+            H_mag = np.abs(H)
+            for j in range(n_samples):
+                collect_freq_resp[:, j, i] = H_mag * mask[j, i]
+
+        # not summing over filters to keep granularity for each band
+        return collect_freq_resp
 
     def plot_dwt_scaleogram_freq(self):
         """

@@ -28,5 +28,5 @@ def downsample_wavedec(coeffs):
     for i, coeff in enumerate(coeffs):
         c = coeff[1::(2**(i+1))]
 
-        downsampled_coeffs.append(c)
+        downsampled_coeffs.append(np.asarray(c))
     return downsampled_coeffs[::-1]

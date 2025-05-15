@@ -38,20 +38,20 @@ class WaveletMask:
 
         # Initialize mask
         mask_shape = torch.tensor(data.shape)
-        mask = (0.5 * torch.ones((*mask_shape, self.filterbank.nfilters), device=self.device)).detach()
+        mask = (0.5 * torch.ones((*mask_shape, self.filterbank.nbanks), device=self.device)).detach()
         mask.requires_grad_()
 
         optimizer = torch.optim.Adam([mask], lr=learning_rate)
 
         # Regularization
         if self.regularization == 'ratio':
-            reg_ref = torch.zeros(int((1 - keep_ratio) * self.filterbank.nfilters))
-            reg_ref = torch.cat((reg_ref, torch.ones(self.filterbank.nfilters - reg_ref.shape[0]))).to(self.device)
+            reg_ref = torch.zeros(int((1 - keep_ratio) * self.filterbank.nbanks))
+            reg_ref = torch.cat((reg_ref, torch.ones(self.filterbank.nbanks - reg_ref.shape[0]))).to(self.device)
 
 
         # Get filtered bands from wavelet filterbank
         bands = self.filterbank.get_wavelet_bands(normalize=normalize, rescale=rescale)
-        bands = torch.tensor(bands).float().to(self.device).reshape(*data.shape, self.filterbank.nfilters) # (n_channels, time, n_filters)
+        bands = torch.tensor(bands).float().to(self.device).reshape(*data.shape, self.filterbank.nbanks) # (n_channels, time, n_filters)
 
         reg_strength = reg_factor_init
         reg_multiplicator = np.exp(np.log(reg_factor_dilation) / max(n_epoch, 1))

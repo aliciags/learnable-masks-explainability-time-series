@@ -4,6 +4,8 @@ import math
 import numpy as np
 import torch.nn.functional as F
 
+from src.utils.sampling import upsampling_wavedec, downsample_wavedec
+
 def evaluate_attributions(model, 
                           loader, 
                           attribution, 
@@ -63,23 +65,34 @@ def evaluate_attributions(model,
                 time_dim = -1
                 time_len = len(x[0][0])
 
-                print(f"shape of x: {x.shape}")
-
-                # print(f"Shape of x: {x.shape}")
-
                 if domain == 'fft':
                     data = torch.fft.rfft(x, dim=time_dim).to(device)
                 elif domain == 'wavelet':
+
                     # assuming one channel
                     wavelet_transform = []
                     coeffs = pywt.wavedec(x, wavelet)
+                    # coeffs = coeffs[1:]  # remove the approximation coefficients
+                    # move the first dimension to the last dimension
+                    # coeffs = np.moveaxis(coeffs, 0, -1)
 
-                    for i in range(len(coeffs)):  # iterate over levels
+                    # for i in range(len(coeffs)):  # iterate over batch size
+                    #     batch_list = []
+                    #     for j in range(len(coeffs[i])):  # iterate over channels
+                    #         upsampled = upsampling_wavedec(coeffs[i][j])
+                    #         batch_list.append(upsampled)
+                    #     wavelet_transform.append(batch_list)
+
+                    # data = torch.tensor(np.array(wavelet_transform)).float().to(device)
+                    # print(f"Data shape: {data.shape}")
+
+
+                    for j in range(len(coeffs)):  # iterate over levels
                         level_list = []
-                        for j in range(len(coeffs[i])):  # batch size
+                        for k in range(len(coeffs[j])):  # batch size
                             batch_list = []
-                            for k in range(len(coeffs[i][j])):  # channels
-                                signal = coeffs[i][j][k]
+                            for l in range(len(coeffs[j][k])):  # channels
+                                signal = coeffs[j][k][l]
                                 factor = math.ceil(time_len / len(signal))
                                 upsampled = np.repeat(signal, factor)[:time_len]
                                 batch_list.append(upsampled)
@@ -88,7 +101,6 @@ def evaluate_attributions(model,
 
                     wavelet_transform = np.moveaxis(np.array(wavelet_transform), 0, -1)
                     data = torch.tensor(wavelet_transform).float().to(device)
-                    print(f"Data shape: {data.shape}")  
 
                 elif domain == 'time':
                     data = x.to(device)
@@ -123,24 +135,47 @@ def evaluate_attributions(model,
 
                 else:
                     raise ValueError("mode must be 'insertion' or 'deletion'")
+
+                # print(f"Masked data shape: {masked_data.shape}")
                 
 
                 if domain == 'fft':
                     data = torch.fft.irfft(masked_data, dim=time_dim).to(device)
                 elif domain == 'wavelet':
                     # downsample the data to the original size
-                    masked_data == masked_data[::-1]
-                    masked_downsampled = []
-                    for i, coeff in enumerate(masked_data):
-                        if i == len(masked_data) - 1:
-                            b = b[1::(2**(i))]
-                        else:
-                            b = b[1::(2**(i+1))]
-                        masked_downsampled.append(b)
-                    
-                    masked_downsampled = masked_downsampled[::-1]
+                    masked_data_np = masked_data.detach().cpu().numpy()
+                    # print(f"Masked data shape numpy: {masked_data_np.shape}")
 
-                    data = torch.tensor(pywt.waverec(masked_downsampled, wavelet).to(device))
+                    masked_data_np = np.moveaxis(masked_data_np, -2, -1)  # now shape: [batch_size, channels, levels, time]
+                    # print(f"Masked data shape numpy after move axis: {masked_data_np.shape}")
+
+                    # n_levels = masked_data_np.shape[2] # number of levels
+                    # print(f"Number of levels: {n_levels}")
+
+                    # masked_downsampled = [[[] for _ in range(masked_data_np.shape[0])] for _ in range(n_levels)]  # shape [4][5][channel=1]
+
+                    # for i in range(masked_data_np.shape[0]):        # over batch
+                    #     for j in range(masked_data_np.shape[1]):    # over channels
+                    #         coeffs = downsample_wavedec(masked_data_np[i][j])  # returns [level_0, ..., level_3]
+                    #         for level_idx, level_coeff in enumerate(coeffs):
+                    #             masked_downsampled[level_idx][i].append(level_coeff)
+
+                    # #  over wavelet levels
+                    # reconstructed_data = pywt.waverec(masked_downsampled, wavelet)
+
+                    reconstructed_data = []
+
+                    for j in range(masked_data_np.shape[0]):  # over batch
+                        for k in range(masked_data_np.shape[1]):  # over channels
+                            coeffs = downsample_wavedec(masked_data_np[j][k])  # should be a flat list of np arrays
+                            recon = pywt.waverec(coeffs, wavelet)
+                            reconstructed_data.append(recon)
+
+                    # for sample in masked_downsampled:
+                    #     recon = pywt.waverec(sample, wavelet)
+                    #     reconstructed_data.append(recon)
+
+                    data = torch.tensor(np.array(reconstructed_data)).float().to(device)
 
 
                 output = model(data.float()).detach().cpu()
@@ -150,10 +185,6 @@ def evaluate_attributions(model,
                 correct += (predicted == y).sum().item()
                 ce_loss += F.cross_entropy(output, y).item()/len(batch)
                 mean_true_class_prob += torch.take_along_dim(F.softmax(output, dim=1), y.unsqueeze(1), dim = 1).sum().item()
-
-                if len(attribution) != len(loader):
-                    # if the attribution is not the same length as the loader, break
-                    break
 
             accuracies.append(correct / total)
             ce_losses.append(ce_loss)
