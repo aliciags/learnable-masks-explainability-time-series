@@ -138,9 +138,11 @@ class WaveletFilterbank():
             for level, coeff in enumerate(upsampled_coeffs):
                 upsampled_coeffs[level] = coeff * (2 ** level)
         if normalize:
+            upsampled_coeffs = np.abs(upsampled_coeffs)
             upsampled_coeffs = (upsampled_coeffs - np.min(upsampled_coeffs)) / (np.max(upsampled_coeffs) - np.min(upsampled_coeffs) + 1e-8)
 
         return upsampled_coeffs
+    
     def plot_filterbank(self):
         """
         Plot the magnitude frequency response of each filter in the filterbank.

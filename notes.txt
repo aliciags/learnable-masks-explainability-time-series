@@ -58,3 +58,7 @@ ampl = 1
 
 results stored in flextime_64_9_128_3
 with model 5 trained on this data
+
+prior to this point data simu seed 33 and train/test seed in 42
+from now on everything seeded 42 :)
+
