@@ -1,3 +1,4 @@
+import re
 import math
 import numpy as np
 
@@ -30,3 +31,8 @@ def downsample_wavedec(coeffs):
 
         downsampled_coeffs.append(np.asarray(c))
     return downsampled_coeffs[::-1]
+
+def split_string(s):
+    # Use regex to find all sequences of digits and non-digits
+    parts = re.findall(r'\d+|[^\d\s]+', s)
+    return parts
