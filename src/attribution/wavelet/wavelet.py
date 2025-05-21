@@ -131,23 +131,16 @@ class WaveletFilterbank():
             raise ValueError("DWT coefficients not computed. Call apply_dwt_filterbank() first.")
         return self.coeffs
     
-    def get_wavelet_bands(self, normalize=True, rescale=True):
-        # upsampled_coeffs = []
+    def get_wavelet_bands(self, normalize=False, rescale=False):
+        upsampled_coeffs = upsampling_wavedec(self.coeffs)
 
-        # for level, coeff in enumerate(self.coeffs):
-        #     factor = int(np.ceil(len(self.data) / len(coeff)))
-        #     upsampled = np.repeat(coeff, factor)[:len(self.data)]
-            
-        #     if rescale:
-        #         upsampled *= 2 ** level
-        #     if normalize:
-        #         upsampled = (upsampled - np.min(upsampled)) / (np.max(upsampled) - np.min(upsampled) + 1e-8)
+        if rescale:
+            for level, coeff in enumerate(upsampled_coeffs):
+                upsampled_coeffs[level] = coeff * (2 ** level)
+        if normalize:
+            upsampled_coeffs = (upsampled_coeffs - np.min(upsampled_coeffs)) / (np.max(upsampled_coeffs) - np.min(upsampled_coeffs) + 1e-8)
 
-        #     upsampled_coeffs.append(upsampled)
-
-        # return np.array(upsampled_coeffs)
-        return upsampling_wavedec(self.coeffs)
-    
+        return upsampled_coeffs
     def plot_filterbank(self):
         """
         Plot the magnitude frequency response of each filter in the filterbank.

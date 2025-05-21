@@ -45,3 +45,16 @@ fs = 16, T = 1s
 2 iteration of signal generation for test
 
 with model 4 trained on this data
+
+Train_3 and Test_3
+fs = 16, T = 1s
+freqs_0 = 2Hz
+freqs_1 = 6Hz
+time = 0.3
+ampl = 1
+
+5 iterations of signal generations for train and filtered with either LP or HP
+1 iteration of signal generation for test and filtered with either LP or HP
+
+results stored in flextime_64_9_128_3
+with model 5 trained on this data

@@ -6,7 +6,9 @@ def compute_wavelet_attribution( model,
                                  dataloader, 
                                  filterbank_params = {'wavelet': 'db', 'w_len': 1, 'fs': 100, 'level': 5}, 
                                  device = 'cpu', 
-                                 verbose = True):
+                                 verbose = True,
+                                 normalize = False,
+                                 rescale = False):
     # define mask
     masks = []
     scores = []
@@ -37,7 +39,7 @@ def compute_wavelet_attribution( model,
             filterbank.apply_dwt_filterbank(singal)
             
             # get the attribution mask
-            mask, loss = mask_opt.fit(x, verbose=verbose)
+            mask, loss = mask_opt.fit(x, verbose=verbose, normalize=normalize, rescale=rescale)
             # print(type(mask))
             mask = mask.squeeze().cpu().detach().numpy() # shape (time, n_filters)
             # print(f"Mask shape: {mask.shape}")

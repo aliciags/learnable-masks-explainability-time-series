@@ -12,7 +12,7 @@ class WaveletMask:
 
     def fit(self,
             data,
-            n_epoch: int = 500,
+            n_epoch: int = 250,
             learning_rate: float = 1.0e-2,
             keep_ratio: float = 0.05,
             reg_factor_init: float = 1.0,
@@ -20,8 +20,8 @@ class WaveletMask:
             stopping: float = 1.0e-5,
             patience: int = 10,
             verbose: bool = True,
-            normalize: bool = True,
-            rescale: bool = True,
+            normalize: bool = False,
+            rescale: bool = False,
             use_only_max: bool = True):
         
         self.model.eval()
