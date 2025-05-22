@@ -53,10 +53,13 @@ freqs_1 = 6Hz
 time = 0.3
 ampl = 1
 
-5 iterations of signal generations for train and filtered with either LP or HP
-1 iteration of signal generation for test and filtered with either LP or HP
+5 iterations of signal generations for train and filtered with either LP or HP (3, 5) cutoff freq
+1 iteration of signal generation for test and filtered with either LP or HP (3, 5) cutoff freq
 
 results stored in flextime_64_9_128_3
+and wavelet_db1_4_128_results_3
+wavelet_db1_4_128_results_3_rescaled
+wavelet_db1_4_128_results_3_normalized
 with model 5 trained on this data
 
 prior to this point data simu seed 33 and train/test seed in 42

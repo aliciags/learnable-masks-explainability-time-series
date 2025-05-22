@@ -102,6 +102,8 @@ def evaluate_attributions(model,
                     wavelet_transform = np.moveaxis(np.array(wavelet_transform), 0, -1)
                     data = torch.tensor(wavelet_transform).float().to(device)
 
+                    print(f"Data shape: {data.shape}")
+
                 elif domain == 'time':
                     data = x.to(device)
                 
@@ -113,6 +115,7 @@ def evaluate_attributions(model,
                 #     imp = torch.abs(data)
                 # else:
                     
+                print(f"Attribution shape: {attribution[i].shape}")
                 imp = attribution[i].reshape(shape).to(torch.float32).to(device)
 
                 # flatten data and compute quantile
@@ -185,6 +188,9 @@ def evaluate_attributions(model,
                 correct += (predicted == y).sum().item()
                 ce_loss += F.cross_entropy(output, y).item()/len(batch)
                 mean_true_class_prob += torch.take_along_dim(F.softmax(output, dim=1), y.unsqueeze(1), dim = 1).sum().item()
+
+                if len(attribution) != len(loader):
+                    break
 
             accuracies.append(correct / total)
             ce_losses.append(ce_loss)
