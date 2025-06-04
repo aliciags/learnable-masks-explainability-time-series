@@ -5,6 +5,9 @@ physioex/
 # data
 data/
 
+# results
+*.pkl
+
 # error files from job execution
 *.err
 *.out

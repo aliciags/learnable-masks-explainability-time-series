@@ -44,7 +44,7 @@ print(f"Using device: {device}")
 model = SimpleCNN(in_channels=1, out_channels=2, hidden_size=64, kernel_size=5)
 
 # load the model weights
-model.load_state_dict(torch.load("./model/checkpoint/simpleCNN_5.pth", map_location=torch.device('mps')))
+model.load_state_dict(torch.load("./model/checkpoint/simpleCNN.pth"))
 model.to(device)
 
 # Load and shape synthetic test data
@@ -52,17 +52,17 @@ x = None
 y = None
 
 # load the data from synthetic data
-data_folder = "./data/synthetic/test_3"
+data_folder = "./data/synthetic/test"
 data_files = os.listdir(data_folder)
 for file in data_files:
-    if "samples_0_0" in file:
+    if "samples_0" in file:
         if x is None and y is None:
             x = np.load(os.path.join(data_folder, file))
             y = np.zeros(5000)
         else:
             x = np.concatenate([x, np.load(os.path.join(data_folder, file))])
             y = np.concatenate([y, np.zeros(5000)])
-    elif "samples_1_0" in file:
+    elif "samples_1" in file:
         if x is None and y is None:
             x = np.load(os.path.join(data_folder, file))
             y = np.ones(5000)
@@ -96,10 +96,18 @@ dataset = TensorDataset(x_shuffled, y_shuffled)
 # create the DataLoader
 test_loader = DataLoader(dataset, batch_size=128)
 
+# read data
+# folder = 'public/simple/'
+# path = f'{folder}wavelets_results.pkl'
+
+# with open(path, 'rb') as f:
+#     attributions = pickle.load(f)
+# print(f"Attributions loaded from {path}")
+
 comp = Complexity()
-attributions = {}
 
 # define metrics
+attributions = {}
 attributions['deletion'] = {}
 attributions['insertion'] = {}
 predictions = []
@@ -126,13 +134,13 @@ attributions['predictions'] = predictions
 attributions['labels'] = labels
 
 # defining parameters
-fs = 16
+fs = 100
 batch_size = 128
 method = 'wavelet'
 quantiles = np.arange(0, 1.05, 0.05)
 
 # define all the wavelets to test
-wavelets =  ['db1', 'db2', 'db3', 'db4', 'sym2', 'sym3', 'sym4', 'coif1', 'coif2', 'coif3']
+wavelets =  ['db1', 'db2', 'db3', 'db4', 'sym4', 'sym5', 'sym6', 'sym7', 'coif1', 'coif2', 'coif3', 'coif4']
 
 for w in wavelets:
     wavelet, w_len = split_string(w)
@@ -152,7 +160,7 @@ for w in wavelets:
         if not mode in attributions.keys():
             attributions[mode] = {}
         
-        acc_scores = evaluate_attributions(model, test_loader, attributions[key_], quantiles=quantiles, mode=mode, device=device, domain='wavelet', wavelet='db1')
+        acc_scores = evaluate_attributions(model, test_loader, attributions[key_], quantiles=quantiles, mode=mode, device=device, domain='wavelet', wavelet=w)
         attributions[mode][key_] = acc_scores
 
     if not key_ in complexities.keys():
@@ -198,11 +206,12 @@ for w in wavelets:
 print(complexities)
 print(grad_complexties)
 
-import pickle
+attributions['complexities'] = complexities
+attributions['grad_complexities'] = grad_complexties
 
 # dump to file
 folder = 'public/simple/'
-path = f'{folder}_test.pkl'
+path = f'{folder}_wavelets_results.pkl'
 
 with open(path, 'wb') as f:
     pickle.dump(attributions, f)
