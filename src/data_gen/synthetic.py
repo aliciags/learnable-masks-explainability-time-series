@@ -85,7 +85,7 @@ def highpass_filter(data, cutoff, fs, order=5):
 
 
 # Function to generate varied signals for classification with LP + HP
-def generate_singal_filtered(frequencies, times, amplitudes, noise_level=0.1, jitter=0.2, fs: int = 100, T: int = 30, cutoff: int = 4, order: int = 5):
+def generate_signal_filtered(frequencies, times, amplitudes, noise_level=0.1, jitter=0.2, fs: int = 100, T: int = 30, cutoff: int = 4, order: int = 5):
     """
     Generate a signal with multiple frequency components at different times and amplitudes.
     

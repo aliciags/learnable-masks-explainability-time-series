@@ -1,23 +1,26 @@
 import torch
 import numpy as np
 from src.attribution.wavelet import WaveletFilterbank, WaveletMask
+from src.utils.sampling import upsampling_wavedec
+
 
 def compute_wavelet_attribution( model, 
                                  dataloader, 
-                                 filterbank_params = {'wavelet': 'db', 'w_len': 1, 'fs': 100, 'level': 5}, 
-                                 device = 'cpu', 
-                                 verbose = True,
-                                 normalize = False,
-                                 rescale = False):
+                                 filterbank_params = {'wavelet': 'db', 'w_len': 1, 'fs': 16, 'level': 4}, 
+                                 device:str = 'cpu', 
+                                 verbose:bool = True,
+                                 normalize:bool = False,
+                                 regularization:str = 'l1'):
     # define mask
     masks = []
     scores = []
+    losses = []
 
     # create filterbank
     filterbank = WaveletFilterbank(**filterbank_params)
 
     # create FLEXtime mask
-    mask_opt = WaveletMask(model, filterbank, device=device) 
+    mask_opt = WaveletMask(model, filterbank, device=device, regularization=regularization) 
 
     for i, batch in enumerate(dataloader):
         batch_scores = []
@@ -33,20 +36,19 @@ def compute_wavelet_attribution( model,
             y = y.to(device)
 
             # assuming one channel
-            singal = x[0]
+            signal = x[0]
 
             # create filterbank assuming 1 channel
-            filterbank.apply_dwt_filterbank(singal)
+            filterbank.apply_dwt_filterbank(signal)
             
             # get the attribution mask
-            mask, loss = mask_opt.fit(x, verbose=verbose, normalize=normalize, rescale=rescale)
-            # print(type(mask))
+            mask, loss = mask_opt.fit(x, verbose=verbose)
+
+            losses.append(loss)
             mask = mask.squeeze().cpu().detach().numpy() # shape (time, n_filters)
-            # print(f"Mask shape: {mask.shape}")
 
             # normalize 
             imp = torch.tensor(filterbank.get_filter_response(mask)) # shape (channels, time, n_filters)
-            # print(f"Imp shape: {imp.shape}")
 
             batch_scores.append(imp)
             filter_batch_scores.append(mask)

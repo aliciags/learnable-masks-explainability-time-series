@@ -42,65 +42,65 @@ class WaveletFilterbank():
 
         # self._create_filterbank()
 
-    def _upsample_filter(self, filt, level):
-        """
-        Upsample filter by inserting 2^(level - 1) - 1 zeros between taps.
-        """
-        up_factor = 2 ** (level - 1)
-        return upfirdn([1], filt, up=up_factor)
+    # def _upsample_filter(self, filt, level):
+    #     """
+    #     Upsample filter by inserting 2^(level - 1) - 1 zeros between taps.
+    #     """
+    #     up_factor = 2 ** (level - 1)
+    #     return upfirdn([1], filt, up=up_factor)
     
-    def _create_filterbank(self):
-        """
-        Create dyadically upsampled filters (hi-pass at each level + final low-pass).
-        NOT FULLY DWT TREE since not downsampling (future problem)
-        """
-        wavelet = pywt.Wavelet(self.wavelet)
-        dec_lo = np.array(wavelet.dec_lo)  # Low-pass
-        dec_hi = np.array(wavelet.dec_hi)  # High-pass
+    # def _create_filterbank(self):
+    #     """
+    #     Create dyadically upsampled filters (hi-pass at each level + final low-pass).
+    #     NOT FULLY DWT TREE since not downsampling (future problem)
+    #     """
+    #     wavelet = pywt.Wavelet(self.wavelet)
+    #     dec_lo = np.array(wavelet.dec_lo)  # Low-pass
+    #     dec_hi = np.array(wavelet.dec_hi)  # High-pass
 
-        for lvl in range(1, self.level + 1):
-            h_hi = self._upsample_filter(dec_hi, lvl)
-            self.banks.append({'level': lvl, 'type': 'highpass', 'filter': h_hi})
+    #     for lvl in range(1, self.level + 1):
+    #         h_hi = self._upsample_filter(dec_hi, lvl)
+    #         self.banks.append({'level': lvl, 'type': 'highpass', 'filter': h_hi})
 
-        # Final lowpass filter at the deepest level
-        h_lo = self._upsample_filter(dec_lo, self.level)
-        self.banks.append({'level': self.level, 'type': 'lowpass', 'filter': h_lo})
+    #     # Final lowpass filter at the deepest level
+    #     h_lo = self._upsample_filter(dec_lo, self.level)
+    #     self.banks.append({'level': self.level, 'type': 'lowpass', 'filter': h_lo})
 
-        self.nbanks = len(self.banks)
+    #     self.nbanks = len(self.banks)
 
-    def apply_filterbank(self, x):
-        ## Maybe is better to use conv1D with tensors but rn it seems to complex
-        """
-        Apply the wavelet FIR filterbank to signal x.
-        Returns y with shape: (len(x), n_filters)
-        """
-        x = x.cpu().numpy() if isinstance(x, torch.Tensor) else x
-        y = np.zeros((*x.shape, self.nbanks))
+    # def apply_filterbank(self, x):
+    #     ## Maybe is better to use conv1D with tensors but rn it seems to complex
+    #     """
+    #     Apply the wavelet FIR filterbank to signal x.
+    #     Returns y with shape: (len(x), n_filters)
+    #     """
+    #     x = x.cpu().numpy() if isinstance(x, torch.Tensor) else x
+    #     y = np.zeros((*x.shape, self.nbanks))
 
-        # print(f"Shape of x: {x.shape}")
-        # print(self.nbanks)
-        # print(f"Shape of y: {y.shape}")
+    #     # print(f"Shape of x: {x.shape}")
+    #     # print(self.nbanks)
+    #     # print(f"Shape of y: {y.shape}")
 
-        # for i, bank in enumerate(self.banks):
-        #     h = bank['filter']
-        #     filtered = convolve(x, h[None, :], mode='full') # to broadcast over channels
-        #     # Adjust to match input length if needed
-        #     if len(filtered) != len(x):
-        #         center = (len(filtered) - len(x)) // 2
-        #         filtered = filtered[center:center+len(x)]
-        #     y[:, i] = filtered
+    #     # for i, bank in enumerate(self.banks):
+    #     #     h = bank['filter']
+    #     #     filtered = convolve(x, h[None, :], mode='full') # to broadcast over channels
+    #     #     # Adjust to match input length if needed
+    #     #     if len(filtered) != len(x):
+    #     #         center = (len(filtered) - len(x)) // 2
+    #     #         filtered = filtered[center:center+len(x)]
+    #     #     y[:, i] = filtered
 
-        for i, bank in enumerate(self.banks):
-            h = bank['filter']
-            for channel_id, channel in enumerate(x):
-                filtered = np.convolve(channel, h, mode='full')
-                # Crop to match original length
-                if len(filtered) != len(channel):
-                    center = (len(filtered) - len(channel)) // 2
-                    filtered = filtered[center:center+len(channel)]
-                y[channel_id, :, i] = filtered
+    #     for i, bank in enumerate(self.banks):
+    #         h = bank['filter']
+    #         for channel_id, channel in enumerate(x):
+    #             filtered = np.convolve(channel, h, mode='full')
+    #             # Crop to match original length
+    #             if len(filtered) != len(channel):
+    #                 center = (len(filtered) - len(channel)) // 2
+    #                 filtered = filtered[center:center+len(channel)]
+    #             y[channel_id, :, i] = filtered
 
-        return y    
+    #     return y    
 
 
     def apply_dwt_filterbank(self, data):
@@ -118,9 +118,7 @@ class WaveletFilterbank():
             self.data = data
         self.time = np.linspace(0, len(data) / self.fs, len(data))
 
-        self.coeffs = pywt.wavedec(self.data, self.wavelet, level=self.level)
-        # removing the approximation coefficients since they are the same as the last iteration of detailed coeffs
-        # self.coeffs = self.coeffs[1:]
+        self.coeffs = pywt.wavedec(self.data, self.wavelet)
         self.nbanks = len(self.coeffs)
 
     def get_dwt_coeffs(self):
@@ -132,7 +130,7 @@ class WaveletFilterbank():
         return self.coeffs
     
     def get_wavelet_bands(self, normalize=False, rescale=False):
-        upsampled_coeffs = upsampling_wavedec(self.coeffs)
+        upsampled_coeffs = upsampling_wavedec(len(self.data), self.coeffs)
 
         if rescale:
             for level, coeff in enumerate(upsampled_coeffs):

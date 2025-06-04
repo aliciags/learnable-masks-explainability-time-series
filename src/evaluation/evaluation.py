@@ -4,13 +4,13 @@ import math
 import numpy as np
 import torch.nn.functional as F
 
-from src.utils.sampling import upsampling_wavedec, downsample_wavedec
+from src.utils.sampling import upsampling_wavedec, downsample_wavedec, split_string
 
 def evaluate_attributions(model, 
                           loader, 
                           attribution, 
                           quantiles, 
-                          mode = 'deletion', 
+                          mode = 'insertion', 
                           domain = 'fft',
                           wavelet = 'db1', 
                           device = 'cpu'):
@@ -48,6 +48,10 @@ def evaluate_attributions(model,
     
     model.eval().to(device)
 
+    if domain == 'wavelet':
+        wavelet_name, filter_length = split_string(wavelet)
+        filter_length = int(filter_length)
+
     with torch.no_grad():
         accuracies = []
         mean_true_class_probs = []
@@ -72,20 +76,6 @@ def evaluate_attributions(model,
                     # assuming one channel
                     wavelet_transform = []
                     coeffs = pywt.wavedec(x, wavelet)
-                    # coeffs = coeffs[1:]  # remove the approximation coefficients
-                    # move the first dimension to the last dimension
-                    # coeffs = np.moveaxis(coeffs, 0, -1)
-
-                    # for i in range(len(coeffs)):  # iterate over batch size
-                    #     batch_list = []
-                    #     for j in range(len(coeffs[i])):  # iterate over channels
-                    #         upsampled = upsampling_wavedec(coeffs[i][j])
-                    #         batch_list.append(upsampled)
-                    #     wavelet_transform.append(batch_list)
-
-                    # data = torch.tensor(np.array(wavelet_transform)).float().to(device)
-                    # print(f"Data shape: {data.shape}")
-
 
                     for j in range(len(coeffs)):  # iterate over levels
                         level_list = []
@@ -108,12 +98,6 @@ def evaluate_attributions(model,
                     data = x.to(device)
                 
                 shape = data.shape
-
-                # if attribution == 'random':
-                #     imp = torch.rand_like(data).float()
-                # elif attribution == 'amplitude':
-                #     imp = torch.abs(data)
-                # else:
                     
                 print(f"Attribution shape: {attribution[i].shape}")
                 imp = attribution[i].reshape(shape).to(torch.float32).to(device)
@@ -152,31 +136,13 @@ def evaluate_attributions(model,
                     masked_data_np = np.moveaxis(masked_data_np, -2, -1)  # now shape: [batch_size, channels, levels, time]
                     # print(f"Masked data shape numpy after move axis: {masked_data_np.shape}")
 
-                    # n_levels = masked_data_np.shape[2] # number of levels
-                    # print(f"Number of levels: {n_levels}")
-
-                    # masked_downsampled = [[[] for _ in range(masked_data_np.shape[0])] for _ in range(n_levels)]  # shape [4][5][channel=1]
-
-                    # for i in range(masked_data_np.shape[0]):        # over batch
-                    #     for j in range(masked_data_np.shape[1]):    # over channels
-                    #         coeffs = downsample_wavedec(masked_data_np[i][j])  # returns [level_0, ..., level_3]
-                    #         for level_idx, level_coeff in enumerate(coeffs):
-                    #             masked_downsampled[level_idx][i].append(level_coeff)
-
-                    # #  over wavelet levels
-                    # reconstructed_data = pywt.waverec(masked_downsampled, wavelet)
-
                     reconstructed_data = []
 
                     for j in range(masked_data_np.shape[0]):  # over batch
                         for k in range(masked_data_np.shape[1]):  # over channels
-                            coeffs = downsample_wavedec(masked_data_np[j][k])  # should be a flat list of np arrays
+                            coeffs = downsample_wavedec(time_len, masked_data_np[j][k], wavelet_name, filter_length)  # should be a flat list of np arrays
                             recon = pywt.waverec(coeffs, wavelet)
                             reconstructed_data.append(recon)
-
-                    # for sample in masked_downsampled:
-                    #     recon = pywt.waverec(sample, wavelet)
-                    #     reconstructed_data.append(recon)
 
                     data = torch.tensor(np.array(reconstructed_data)).float().to(device)
 

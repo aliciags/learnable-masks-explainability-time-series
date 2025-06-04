@@ -62,6 +62,39 @@ wavelet_db1_4_128_results_3_rescaled
 wavelet_db1_4_128_results_3_normalized
 with model 5 trained on this data
 
-prior to this point data simu seed 33 and train/test seed in 42
-from now on everything seeded 42 :)
+### SECOND VERSION FROM NOW ON EVERYTHING WITH SEED 42
+
+Train_1 and Test_1
+fs = 16, T = 1s
+freqs_0 = [2]
+freqs_1 = [6] 
+times_0 = [0.3]
+times_1 = [0.3]
+ampls = [1]
+
+same time different frequencies and filtered in LP or HP at cutoff frequencies of 3Hz and 5Hz
+model CNN_1
+
+
+Train_2 and Test_2
+fs = 16, T = 1s
+freqs_0 = [2]
+freqs_1 = [6] 
+times_0 = [0.3]
+times_1 = [0.7]
+ampls = [1]
+
+different times and different frequencies wihtout filtering
+model CNN_2
+
+Train_3 and Test_3
+fs = 100, T = 1s
+freqs_0 = [8]
+freqs_1 = [30] 
+times_0 = [0.3]
+times_1 = [0.7]
+ampls = [1]
+
+different times and different frequencies wihtout filtering
+model CNN_3
 
