@@ -2,7 +2,7 @@ import pickle
 import torch
 import pandas as pd
 
-with open("public/simple/_wavelets_results.pkl", "rb") as f:
+with open("public/simple/_wavelets_results_expanded.pkl", "rb") as f:
     scores = pickle.load(f)
 
 # Check the type of the loaded object
@@ -50,5 +50,5 @@ scores = move_to_cpu(scores)
 # # set the dictionary to cpu??
 
 # store in another file
-with open("public/simple/_wavelets_cpu.pkl", "wb") as f:
+with open("public/simple/_wavelets_cpu_expanded.pkl", "wb") as f:
     pickle.dump(scores, f)

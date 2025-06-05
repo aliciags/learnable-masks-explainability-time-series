@@ -13,7 +13,7 @@ x = None
 y = None
 
 # load the data from synthetic data
-data_folder = "./data/synthetic/train"
+data_folder = "./data/synthetic/train_1"
 data_files = os.listdir(data_folder)
 for file in data_files:
     if "samples_0" in file:
@@ -114,6 +114,6 @@ def train_model(model, train_loader, epochs=20, lr=0.001, device=device):
 model = SimpleCNN(in_channels=1, out_channels=2, hidden_size=64, kernel_size=5)
 
 # Train the model
-train_model(model, train_loader, epochs=50, lr=0.001, device=device)
+train_model(model, train_loader, epochs=500, lr=0.001, device=device)
 
-torch.save(model.state_dict(), "./model/checkpoint/simpleCNN.pth")
+torch.save(model.state_dict(), "./model/checkpoint/simpleCNN_1.pth")

@@ -44,7 +44,7 @@ print(f"Using device: {device}")
 model = SimpleCNN(in_channels=1, out_channels=2, hidden_size=64, kernel_size=5)
 
 # load the model weights
-model.load_state_dict(torch.load("./model/checkpoint/simpleCNN.pth"))
+model.load_state_dict(torch.load("./model/checkpoint/simpleCNN_1.pth"))
 model.to(device)
 
 # Load and shape synthetic test data
@@ -52,7 +52,7 @@ x = None
 y = None
 
 # load the data from synthetic data
-data_folder = "./data/synthetic/test"
+data_folder = "./data/synthetic/test_1"
 data_files = os.listdir(data_folder)
 for file in data_files:
     if "samples_0" in file:
@@ -140,7 +140,9 @@ method = 'wavelet'
 quantiles = np.arange(0, 1.05, 0.05)
 
 # define all the wavelets to test
-wavelets =  ['db1', 'db2', 'db3', 'db4', 'sym4', 'sym5', 'sym6', 'sym7', 'coif1', 'coif2', 'coif3', 'coif4']
+wavelets =  ['db1', 'db2', 'db3', 'db4', 'db5', 'db6', 'db7', 'db8', 'db9', 'db10', 
+             'sym2', 'sym3', 'sym4', 'sym5', 'sym6', 'sym7', 'sym8', 'sym9', 'sym10',
+             'coif1', 'coif2', 'coif3', 'coif4', 'coif5']
 
 for w in wavelets:
     wavelet, w_len = split_string(w)
@@ -211,7 +213,7 @@ attributions['grad_complexities'] = grad_complexties
 
 # dump to file
 folder = 'public/simple/'
-path = f'{folder}_wavelets_results.pkl'
+path = f'{folder}_wavelets_results_expanded.pkl'
 
 with open(path, 'wb') as f:
     pickle.dump(attributions, f)

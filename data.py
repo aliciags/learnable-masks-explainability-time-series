@@ -8,21 +8,21 @@ SEED = 42
 np.random.seed(SEED)  # For reproducibility
 
 num_samples = 5000  # Number of samples per class
-fs = 100            # Sampling rate
+fs = 1000            # Sampling rate
 T = 1               # Duration in seconds
 N = fs * T          # Number of samples
 
 t = np.linspace(0, T, N)
 
-freqs_0 = [8]     # salient frequencies
-freqs_1 = [30]    # salient frequencies
+freqs_0 = [80]    # salient frequencies
+freqs_1 = [300]   # salient frequencies
 times_0 = [0.3]   # salient times
 times_1 = [0.7]   # salient times
 ampls = [1]       # amplitudes
 
 # folders for train and test data
-folder_train = "./data/synthetic/train_3/"
-folder_test = "./data/synthetic/test_3/"
+folder_train = "./data/synthetic/train_1/"
+folder_test = "./data/synthetic/test_1/"
 
 # create the folder if it does not exist
 if not os.path.exists(folder_train):

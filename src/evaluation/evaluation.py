@@ -92,14 +92,14 @@ def evaluate_attributions(model,
                     wavelet_transform = np.moveaxis(np.array(wavelet_transform), 0, -1)
                     data = torch.tensor(wavelet_transform).float().to(device)
 
-                    print(f"Data shape: {data.shape}")
+                    # print(f"Data shape: {data.shape}")
 
                 elif domain == 'time':
                     data = x.to(device)
                 
                 shape = data.shape
                     
-                print(f"Attribution shape: {attribution[i].shape}")
+                # print(f"Attribution shape: {attribution[i].shape}")
                 imp = attribution[i].reshape(shape).to(torch.float32).to(device)
 
                 # flatten data and compute quantile
