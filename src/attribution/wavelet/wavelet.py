@@ -118,7 +118,7 @@ class WaveletFilterbank():
             self.data = data
         self.time = np.linspace(0, len(data) / self.fs, len(data))
 
-        self.coeffs = pywt.wavedec(self.data, self.wavelet)
+        self.coeffs = pywt.wavedec(self.data, self.wavelet, level=self.level)
         self.nbanks = len(self.coeffs)
 
     def get_dwt_coeffs(self):

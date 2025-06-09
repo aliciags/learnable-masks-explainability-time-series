@@ -134,7 +134,7 @@ attributions['predictions'] = predictions
 attributions['labels'] = labels
 
 # defining parameters
-fs = 100
+fs = 1000
 batch_size = 128
 method = 'wavelet'
 quantiles = np.arange(0, 1.05, 0.05)
@@ -147,7 +147,7 @@ wavelets =  ['db1', 'db2', 'db3', 'db4', 'db5', 'db6', 'db7', 'db8', 'db9', 'db1
 for w in wavelets:
     wavelet, w_len = split_string(w)
     w_len = int(w_len)
-    level = pywt.dwt_max_level(fs, w)
+    level = 5 # pywt.dwt_max_level(fs, w)
     key_ = f'wavelet_{wavelet}{w_len}_{level}_{batch_size}'
     print(key_)
 
@@ -162,7 +162,7 @@ for w in wavelets:
         if not mode in attributions.keys():
             attributions[mode] = {}
         
-        acc_scores = evaluate_attributions(model, test_loader, attributions[key_], quantiles=quantiles, mode=mode, device=device, domain='wavelet', wavelet=w)
+        acc_scores = evaluate_attributions(model, test_loader, attributions[key_], quantiles=quantiles, mode=mode, device=device, domain='wavelet', wavelet=w, level=level)
         attributions[mode][key_] = acc_scores
 
     if not key_ in complexities.keys():
@@ -213,7 +213,7 @@ attributions['grad_complexities'] = grad_complexties
 
 # dump to file
 folder = 'public/simple/'
-path = f'{folder}_wavelets_results_expanded.pkl'
+path = f'{folder}_wavelets_results_5levels.pkl'
 
 with open(path, 'wb') as f:
     pickle.dump(attributions, f)

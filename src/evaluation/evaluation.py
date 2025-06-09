@@ -13,7 +13,8 @@ def evaluate_attributions(model,
                           mode = 'insertion', 
                           domain = 'fft',
                           wavelet = 'db1', 
-                          device = 'cpu'):
+                          device = 'cpu',
+                          level = None):
     """
     Evaluation function used to assess how a model's predictions change when 
     certain parts of the input are masked—either deleted or inserted—based on 
@@ -75,7 +76,7 @@ def evaluate_attributions(model,
 
                     # assuming one channel
                     wavelet_transform = []
-                    coeffs = pywt.wavedec(x, wavelet)
+                    coeffs = pywt.wavedec(x, wavelet, level=level)
 
                     for j in range(len(coeffs)):  # iterate over levels
                         level_list = []
