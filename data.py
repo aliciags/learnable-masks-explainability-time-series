@@ -21,8 +21,8 @@ times_1 = [0.7]   # salient times
 ampls = [1]       # amplitudes
 
 # folders for train and test data
-folder_train = "./data/synthetic/train_1/"
-folder_test = "./data/synthetic/test_1/"
+folder_train = "./data/synthetic/train_4/"
+folder_test = "./data/synthetic/test_4/"
 
 # create the folder if it does not exist
 if not os.path.exists(folder_train):

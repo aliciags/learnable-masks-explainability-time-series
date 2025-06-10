@@ -98,3 +98,13 @@ ampls = [1]
 different times and different frequencies wihtout filtering
 model CNN_3
 
+Train_4 and Test_4
+fs = 100, T = 1s
+freqs_0 = [8]
+freqs_1 = [30] 
+times_0 = [0.3]
+times_1 = [0.7]
+ampls = [1]
+
+
+
