@@ -7,6 +7,7 @@ data/
 
 # results
 *.pkl
+*.zip
 
 # error files from job execution
 *.err
