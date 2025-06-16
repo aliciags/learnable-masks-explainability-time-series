@@ -56,7 +56,5 @@ def compute_wavelet_attribution( model,
         # store the data
         masks.append(torch.stack(batch_scores)) # shape (batch_len, channels, time, n_filters)
         scores.append(np.stack(filter_batch_scores))  # shape (batch_len, time, n_filters)
-
-        break
-
+        
     return masks, scores

@@ -44,7 +44,7 @@ print(f"Using device: {device}")
 model = SimpleCNN(in_channels=1, out_channels=2, hidden_size=64, kernel_size=5)
 
 # load the model weights
-model.load_state_dict(torch.load("./model/checkpoint/simpleCNN_1.pth"))
+model.load_state_dict(torch.load("./model/checkpoint/simpleCNN_5.pth"))
 model.to(device)
 
 # Load and shape synthetic test data
@@ -52,7 +52,7 @@ x = None
 y = None
 
 # load the data from synthetic data
-data_folder = "./data/synthetic/test_1"
+data_folder = "./data/synthetic/test_5"
 data_files = os.listdir(data_folder)
 for file in data_files:
     if "samples_0" in file:
@@ -140,14 +140,12 @@ method = 'wavelet'
 quantiles = np.arange(0, 1.05, 0.05)
 
 # define all the wavelets to test
-wavelets =  ['db1', 'db2', 'db3', 'db4', 'db5', 'db6', 'db7', 'db8', 'db9', 'db10', 
-             'sym2', 'sym3', 'sym4', 'sym5', 'sym6', 'sym7', 'sym8', 'sym9', 'sym10',
-             'coif1', 'coif2', 'coif3', 'coif4', 'coif5']
+wavelets =  ['coif5', 'coif4', 'sym4', 'db4', 'db1']
 
 for w in wavelets:
     wavelet, w_len = split_string(w)
     w_len = int(w_len)
-    level = 5 # pywt.dwt_max_level(fs, w)
+    level = 5 # pywt.dwt_max_level(fs, w)
     key_ = f'wavelet_{wavelet}{w_len}_{level}_{batch_size}'
     print(key_)
 
@@ -205,16 +203,16 @@ for w in wavelets:
     complexities[key_].append(np.mean(scores))
     grad_complexties[key_].append(np.mean(grad_scores))
 
-print(complexities)
-print(grad_complexties)
+    print(complexities)
+    print(grad_complexties)
 
-attributions['complexities'] = complexities
-attributions['grad_complexities'] = grad_complexties
+    attributions['complexities'] = complexities
+    attributions['grad_complexities'] = grad_complexties
 
-# dump to file
-folder = 'public/simple/'
-path = f'{folder}_wavelets_results_5levels.pkl'
+    # dump to file
+    folder = 'public/simple/'
+    path = f'{folder}wavelets_multi_5_{w}.pkl'
 
-with open(path, 'wb') as f:
-    pickle.dump(attributions, f)
-print(f"Saved to {path}")
+    with open(path, 'wb') as f:
+        pickle.dump(attributions, f)
+    print(f"Saved to {path}")

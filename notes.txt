@@ -99,12 +99,21 @@ different times and different frequencies wihtout filtering
 model CNN_3
 
 Train_4 and Test_4
-fs = 100, T = 1s
-freqs_0 = [8]
-freqs_1 = [30] 
+fs = 1000, T = 1s
+freqs_0 = [80]
+freqs_1 = [300] 
 times_0 = [0.3]
 times_1 = [0.7]
 ampls = [1]
+
+Train_5 and Test_5
+fs = 1000, T = 1s
+freqs_0 = [50, 80, 200]     # salient frequencies
+freqs_1 = [50, 200, 300]    # salient frequencies
+times_0 = [0.5, 0.3, 0.2]   # salient times
+times_1 = [0.5, 0.2, 0.7]   # salient times
+ampls_0 = [0.7, 1, 0.5]     # amplitudes
+ampls_1 = [0.7, 0.5, 1]     # amplitudes
 
 
 
