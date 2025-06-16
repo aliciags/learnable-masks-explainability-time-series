@@ -60,19 +60,25 @@ model = load_model(
 
 args = SimpleNamespace()
 args.n_taps = 501
-args.n_filters = 16
+args.n_filters = 64
 args.sample_freq = 100
 args.time_len = 3000 # 30s * 100Hz
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+attributions = {}
+key_ = 'flextime_7_128_64'
+
 # compute attribution of the masks
 masks, scores = compute_attribution('flextime', model, test_loader, device=device, args=args)
 
-# save the masks
-with open("public/masks_sleepEDF_7_2.pkl", "wb") as f:
-    pickle.dump(masks, f)
+attributions[key_] = masks
+attributions[f'filtermasks_{key_}'] = scores
 
-# save the scores
-with open("public/scores_sleepEDF_7_2.pkl", "wb") as f:
-    pickle.dump(scores, f)
+# save the masks
+with open("public/masks_sleepEDF_7_64.pkl", "wb") as f:
+    pickle.dump(attributions, f)
+
+print(f"Saved to public/masks_sleepEDF_7_64.pkl")
+
+
