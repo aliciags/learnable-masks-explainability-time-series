@@ -9,7 +9,6 @@ def compute_wavelet_attribution( model,
                                  filterbank_params = {'wavelet': 'db', 'w_len': 1, 'fs': 16, 'level': 4}, 
                                  device:str = 'cpu', 
                                  verbose:bool = True,
-                                 normalize:bool = False,
                                  regularization:str = 'l1'):
     # define mask
     masks = []
@@ -35,8 +34,12 @@ def compute_wavelet_attribution( model,
             x = x.to(device)
             y = y.to(device)
 
-            # assuming one channel
-            signal = x[0]
+            # computing the wavelet transform for the target sequence
+            if len(x.shape) == 3:
+                sequence_length = x.shape[0]
+                signal = x[sequence_length //2][0] # assuming one channel
+            else: 
+                signal = x[0]
 
             # create filterbank assuming 1 channel
             filterbank.apply_dwt_filterbank(signal)

@@ -28,6 +28,8 @@ class WaveletMask:
         self.model.eval()
         early_stopping_counter = 0
 
+        if len(data.shape) == 3:
+            data = data.unsqueeze(0)
         data = data.float().to(self.device)
 
         # Get model target
@@ -52,7 +54,7 @@ class WaveletMask:
         # Get filtered bands from wavelet filterbank
         bands = self.filterbank.get_wavelet_bands()
         bands = torch.tensor(bands).float().to(self.device)
-        bands = bands.permute(1, 0)
+        bands = bands.permute(-1, -2)
         bands = bands.unsqueeze(0)  # (n_channels, time, n_filters)
 
         reg_strength = reg_factor_init

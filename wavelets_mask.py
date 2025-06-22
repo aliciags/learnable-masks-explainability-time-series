@@ -140,7 +140,7 @@ method = 'wavelet'
 quantiles = np.arange(0, 1.05, 0.05)
 
 # define all the wavelets to test
-wavelets =  ['coif5', 'coif4', 'sym4', 'db4', 'db1']
+wavelets =  ['sym4', 'db4', 'db1']
 
 for w in wavelets:
     wavelet, w_len = split_string(w)
