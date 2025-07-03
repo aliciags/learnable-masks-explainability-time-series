@@ -7,6 +7,12 @@ from physioex.physioex.train.utils import train, test
 from physioex.physioex.data import PhysioExDataModule
 from physioex.physioex.train.models.load import load_model
 
+DATA_PATH = "./data"
+CHECKPOINT_PATH = "./model/checkpoint/"
+CONFIG_PATH = "./config.yaml"
+
+BATCH_SIZE = 128
+
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
@@ -16,18 +22,18 @@ if __name__ == '__main__':
 
     datamodule = PhysioExDataModule(
         datasets=["sleepedf"],     # list of datasets to be used
-        batch_size=128,            # batch size for the DataLoader
+        batch_size=BATCH_SIZE,            # batch size for the DataLoader
         preprocessing="raw",       # preprocessing method
         selected_channels=["EEG"], # channels to be selected
         sequence_length=7,         # length of the sequence
         target_transform= target,  # since seq to epoch, target seq
         num_workers = 8,          # number of parallel workers
-        data_folder = "data"    # path to the data folder
+        data_folder = DATA_PATH    # path to the data folder
     )
 
-    checkpoint_path = "./model/checkpoint/"
+    checkpoint_path = CHECKPOINT_PATH
 
-    with open("./config.yaml", "r") as file:
+    with open(CONFIG_PATH, "r") as file:
         config = yaml.safe_load(file)
 
     network_config = config["model_config"]
@@ -50,12 +56,10 @@ if __name__ == '__main__':
         model_class = model_class,
         model_config = network_config,
         checkpoint_path = checkpoint_path,
-        batch_size = 128,
-        max_epochs = 50,
+        batch_size = BATCH_SIZE,
+        max_epochs = 20,
         resume = False
     )
-
-    best_checkpoint = "fold=-1-epoch=19-step=19898-val_acc=0.83.ckpt"
 
     # Test the model
     results_dataframe = test(
@@ -63,7 +67,7 @@ if __name__ == '__main__':
         model_class = model_class,
         model_config = network_config,
         checkpoint_path = os.path.join( checkpoint_path, best_checkpoint ),
-        batch_size = 128,
+        batch_size = BATCH_SIZE,
         results_path = checkpoint_path,
     )
 

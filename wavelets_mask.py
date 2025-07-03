@@ -96,14 +96,6 @@ dataset = TensorDataset(x_shuffled, y_shuffled)
 # create the DataLoader
 test_loader = DataLoader(dataset, batch_size=128)
 
-# read data
-# folder = 'public/simple/'
-# path = f'{folder}wavelets_results.pkl'
-
-# with open(path, 'rb') as f:
-#     attributions = pickle.load(f)
-# print(f"Attributions loaded from {path}")
-
 comp = Complexity()
 
 # define metrics

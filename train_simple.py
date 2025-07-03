@@ -8,27 +8,32 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from src.models.simple import SimpleCNN
 
+TRAINING_DATA_PATH = "./data/synthetic/train"
+CHECKPOINT_PATH = "./model/checkpoint/"
+
+NUM_EPOCHS = 500
+LEARNING_RATE = 0.001
+BATCH_SIZE = 128
 
 x = None
 y = None
 
 # load the data from synthetic data
-data_folder = "./data/synthetic/train_2"
-data_files = os.listdir(data_folder)
+data_files = os.listdir(TRAINING_DATA_PATH)
 for file in data_files:
     if "samples_0" in file:
         if x is None and y is None:
-            x = np.load(os.path.join(data_folder, file))
+            x = np.load(os.path.join(TRAINING_DATA_PATH, file))
             y = np.zeros(5000)
         else:
-            x = np.concatenate([x, np.load(os.path.join(data_folder, file))])
+            x = np.concatenate([x, np.load(os.path.join(TRAINING_DATA_PATH, file))])
             y = np.concatenate([y, np.zeros(5000)])
     elif "samples_1" in file:
         if x is None and y is None:
-            x = np.load(os.path.join(data_folder, file))
+            x = np.load(os.path.join(TRAINING_DATA_PATH, file))
             y = np.ones(5000)
         else:
-            x = np.concatenate([x, np.load(os.path.join(data_folder, file))])
+            x = np.concatenate([x, np.load(os.path.join(TRAINING_DATA_PATH, file))])
             y = np.concatenate([y, np.ones(5000)])
     else:
         print("File not recognized")
@@ -47,7 +52,7 @@ y = torch.tensor(y, dtype=torch.long)
 dataset = TensorDataset(x, y)
 
 # create the DataLoader
-train_loader = DataLoader(dataset, batch_size=128, shuffle=True)
+train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 # to CUDA if available otherwise to CPU
 if torch.cuda.is_available():
@@ -114,6 +119,6 @@ def train_model(model, train_loader, epochs=20, lr=0.001, device=device):
 model = SimpleCNN(in_channels=1, out_channels=2, hidden_size=64, kernel_size=5)
 
 # Train the model
-train_model(model, train_loader, epochs=500, lr=0.001, device=device)
+train_model(model, train_loader, epochs=NUM_EPOCHS, lr=LEARNING_RATE, device=device)
 
-torch.save(model.state_dict(), "./model/checkpoint/simpleCNN_soft.pth")
+torch.save(model.state_dict(), os.path.join(CHECKPOINT_PATH, "simpleCNN.pth"))

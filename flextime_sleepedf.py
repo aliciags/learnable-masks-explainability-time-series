@@ -97,10 +97,6 @@ if __name__ == '__main__':
     model = model.to(device)
     model.eval()  # Set model to evaluation mode
 
-    # Memory optimization
-    # torch.cuda.empty_cache()
-    # torch.backends.cudnn.benchmark = True
-
     # Initialize metrics
     attributions = {
         'deletion': {},
