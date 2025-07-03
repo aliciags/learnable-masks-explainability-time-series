@@ -4,14 +4,17 @@ import math
 import numpy as np
 import torch.nn.functional as F
 
+from src.utils.sampling import upsampling_wavedec, downsample_wavedec, split_string
+
 def evaluate_attributions(model, 
                           loader, 
                           attribution, 
                           quantiles, 
-                          mode = 'deletion', 
+                          mode = 'insertion', 
                           domain = 'fft',
                           wavelet = 'db1', 
-                          device = 'cpu'):
+                          device = 'cpu',
+                          level = None):
     """
     Evaluation function used to assess how a model's predictions change when 
     certain parts of the input are masked—either deleted or inserted—based on 
@@ -46,6 +49,10 @@ def evaluate_attributions(model,
     
     model.eval().to(device)
 
+    if domain == 'wavelet':
+        wavelet_name, filter_length = split_string(wavelet)
+        filter_length = int(filter_length)
+
     with torch.no_grad():
         accuracies = []
         mean_true_class_probs = []
@@ -63,23 +70,20 @@ def evaluate_attributions(model,
                 time_dim = -1
                 time_len = len(x[0][0])
 
-                print(f"shape of x: {x.shape}")
-
-                # print(f"Shape of x: {x.shape}")
-
                 if domain == 'fft':
                     data = torch.fft.rfft(x, dim=time_dim).to(device)
                 elif domain == 'wavelet':
+
                     # assuming one channel
                     wavelet_transform = []
-                    coeffs = pywt.wavedec(x, wavelet)
+                    coeffs = pywt.wavedec(x, wavelet, level=level)
 
-                    for i in range(len(coeffs)):  # iterate over levels
+                    for j in range(len(coeffs)):  # iterate over levels
                         level_list = []
-                        for j in range(len(coeffs[i])):  # batch size
+                        for k in range(len(coeffs[j])):  # batch size
                             batch_list = []
-                            for k in range(len(coeffs[i][j])):  # channels
-                                signal = coeffs[i][j][k]
+                            for l in range(len(coeffs[j][k])):  # channels
+                                signal = coeffs[j][k][l]
                                 factor = math.ceil(time_len / len(signal))
                                 upsampled = np.repeat(signal, factor)[:time_len]
                                 batch_list.append(upsampled)
@@ -88,19 +92,15 @@ def evaluate_attributions(model,
 
                     wavelet_transform = np.moveaxis(np.array(wavelet_transform), 0, -1)
                     data = torch.tensor(wavelet_transform).float().to(device)
-                    print(f"Data shape: {data.shape}")  
+
+                    # print(f"Data shape: {data.shape}")
 
                 elif domain == 'time':
                     data = x.to(device)
                 
                 shape = data.shape
-
-                # if attribution == 'random':
-                #     imp = torch.rand_like(data).float()
-                # elif attribution == 'amplitude':
-                #     imp = torch.abs(data)
-                # else:
                     
+                # print(f"Attribution shape: {attribution[i].shape}")
                 imp = attribution[i].reshape(shape).to(torch.float32).to(device)
 
                 # flatten data and compute quantile
@@ -123,24 +123,29 @@ def evaluate_attributions(model,
 
                 else:
                     raise ValueError("mode must be 'insertion' or 'deletion'")
+
+                # print(f"Masked data shape: {masked_data.shape}")
                 
 
                 if domain == 'fft':
                     data = torch.fft.irfft(masked_data, dim=time_dim).to(device)
                 elif domain == 'wavelet':
                     # downsample the data to the original size
-                    masked_data == masked_data[::-1]
-                    masked_downsampled = []
-                    for i, coeff in enumerate(masked_data):
-                        if i == len(masked_data) - 1:
-                            b = b[1::(2**(i))]
-                        else:
-                            b = b[1::(2**(i+1))]
-                        masked_downsampled.append(b)
-                    
-                    masked_downsampled = masked_downsampled[::-1]
+                    masked_data_np = masked_data.detach().cpu().numpy()
+                    # print(f"Masked data shape numpy: {masked_data_np.shape}")
 
-                    data = torch.tensor(pywt.waverec(masked_downsampled, wavelet).to(device))
+                    masked_data_np = np.moveaxis(masked_data_np, -2, -1)  # now shape: [batch_size, channels, levels, time]
+                    # print(f"Masked data shape numpy after move axis: {masked_data_np.shape}")
+
+                    reconstructed_data = []
+
+                    for j in range(masked_data_np.shape[0]):  # over batch
+                        for k in range(masked_data_np.shape[1]):  # over channels
+                            coeffs = downsample_wavedec(time_len, masked_data_np[j][k], wavelet_name, filter_length)  # should be a flat list of np arrays
+                            recon = pywt.waverec(coeffs, wavelet)
+                            reconstructed_data.append(recon)
+
+                    data = torch.tensor(np.array(reconstructed_data)).float().to(device)
 
 
                 output = model(data.float()).detach().cpu()
@@ -152,7 +157,6 @@ def evaluate_attributions(model,
                 mean_true_class_prob += torch.take_along_dim(F.softmax(output, dim=1), y.unsqueeze(1), dim = 1).sum().item()
 
                 if len(attribution) != len(loader):
-                    # if the attribution is not the same length as the loader, break
                     break
 
             accuracies.append(correct / total)

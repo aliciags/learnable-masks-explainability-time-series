@@ -13,7 +13,7 @@ model_config:
     adam_epsilon: 1e-8
     latent_space_dim: 32
     input_processing : raw
-    batch_size: 128
+    batch_size: 64
 checkpoint_path : "./model/checkpoint/"
 input_transform: "raw"
 model: physioex.train.networks.chambon2018:Chambon2018Net

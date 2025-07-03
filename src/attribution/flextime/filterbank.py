@@ -58,10 +58,10 @@ class Filterbank:
         """
         # plot filterbank in a single plot
         plt.figure()
-        cmap = get_cmap('hsv', len(self.bank))
+        # cmap = get_cmap('hsv', len(self.bank))
         for i, h in enumerate(self.bank):
             w, h_response = signal.freqz(h, worN=2000)
-            plt.plot((self.sample_freq * 0.5 / np.pi) * w, np.abs(h_response), color=cmap(i))
+            plt.plot((self.sample_freq * 0.5 / np.pi) * w, np.abs(h_response))#, color=cmap(i))
         plt.title("Filterbank")
         plt.xlabel("Frequency (Hz)")
         plt.ylabel("Gain")

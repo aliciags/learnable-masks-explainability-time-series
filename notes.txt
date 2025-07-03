@@ -20,110 +20,113 @@ and adding the seq length to the results names f"results-{seq_length}.csv" key+f
 train changing the model name also adding seq_length seq_length = str(model_config['sequence_length'])
 filename="fold=%d-{epoch}-{step}-{val_acc:.2f}" % fold + "-" + seq_length
 
-### changes in eval and flextime for dim adjustment in model
+# Symu datasets
+Train_1 and Test_1
+fs = 1000, T = 1s
+# freqs_1 = [50, 100, 320, 60, 480]
+# freqs_2 = [50, 480, 320, 60, 100] 
+# times = [0.1, 0.2, 0.4, 0.4, 0.7]
+# ampls = [1, 0.9, 0.8, 0.8, 1]
 
-    for i, batch in enumerate(dataloader):
-        batch_scores = []
-        filter_batch_scores = []
+5 iterations of signal generation for train
+1 iteration of signal generation for test
 
-        # compute the batch scores
-        print(f"Batch {i} of {len(dataloader)}")
-        print(f"batch dimensions {len(batch)}")
-        print(f"batch size {len(batch[0])}")
+with model 3 trained on this data
 
-        # for j, (x, y) in enumerate(zip(*batch)):
-        
-        # print(f"Sample {j} of {len(batch[0])}")
-        x, y = batch
-        x = x.to(device)
-        y = y.to(device)
+Train_2 and Test_2
+fs = 16, T = 1s
+# freqs_0 = [2]
+# freqs_1 = [6] 
+# times_0 = [0.3]
+# times_1 = [0.7]
+# ampls = [1]
 
-        # print(x.shape)
+5 iterations of signal generation for train
+2 iteration of signal generation for test
 
-        # get the attribution mask
-        mask, imp = mask_opt.fit(x)
-        # mask = mask.squeeze().cpu().detach().numpy() # shape (n_filters, )
+with model 4 trained on this data
 
-        # # normalize 
-        # imp = torch.tensor(filterbank.get_filter_response(mask)) # shape (1, 1)
+Train_3 and Test_3
+fs = 16, T = 1s
+freqs_0 = 2Hz
+freqs_1 = 6Hz
+time = 0.3
+ampl = 1
 
-        # batch_scores.append(imp)
-        # filter_batch_scores.append(mask)
+5 iterations of signal generations for train and filtered with either LP or HP (3, 5) cutoff freq
+1 iteration of signal generation for test and filtered with either LP or HP (3, 5) cutoff freq
 
-        # store the data
-        masks.append(torch.stack(imp)) # shape (batch_len, 1, 1)
-        scores.append(np.stack(mask))  # shape (batch_len, n_filters)
-        
-    return masks, scores
-    
+results stored in flextime_64_9_128_3
+and wavelet_db1_4_128_results_3
+wavelet_db1_4_128_results_3_rescaled
+wavelet_db1_4_128_results_3_normalized
+with model 5 trained on this data
 
-    for j, sample in enumerate(data):
-            print(f"Sample {j} of {len(data)}")
-            early_stopping_counter = 0
+### SECOND VERSION FROM NOW ON EVERYTHING WITH SEED 42
 
-            # initialize mask to 0.5
-            mask_shape = torch.tensor(sample.shape)
-            mask_shape[-1] = 1
-            mask = 0.5*torch.ones((*mask_shape, self.filterbank.n_filters), device=self.device)
-            mask.requires_grad = True
+Train_1 and Test_1
+fs = 16, T = 1s
+freqs_0 = [2]
+freqs_1 = [6] 
+times_0 = [0.3]
+times_1 = [0.3]
+ampls = [1]
 
-            # optimizer
-            optimizer = torch.optim.Adam([mask], lr=0.01)
-
-            # precompute filterbank output
-            data_bands = self.filterbank.apply_filterbank(sample.cpu().numpy())
-            data_bands = torch.tensor(data_bands).float().to(self.device).reshape(*sample.shape, self.filterbank.n_filters)
-            # shape (1, time_len, n_filters)
-            # print(f"Data bands shape {data_bands.shape}")
-
-
-            l = float('inf')
-
-            # training loop
-            for epoch in range(500):
-                optimizer.zero_grad()
-
-                # apply mask and sum over filter dimension
-                masked_data = (data_bands * mask).sum(-1)
-
-                # forward pass
-                output = self.model(masked_data)
-                output = torch.nn.functional.softmax(output, dim=1)
-
-                # calculate loss
-                loss = self.loss_fn(output, target[j])
-
-                # regularization assuming lambda = 1 in total loss
-                if self.regularization == 'l1':
-                    loss += mask.abs().sum()
-                elif self.regularization == 'l2':
-                    loss += mask.pow(2).sum()
-
-                # backward pass
-                loss.backward()
-                optimizer.step()
-
-                # clip mask values to [0, 1]
-                mask.data = torch.clamp(mask, 0, 1)
-
-                if epoch % 100 == 0:
-                    print(f'Epoch {epoch} Loss {loss.item()}')
-
-                if stopping is not None:
-                    if abs(l - loss.item()) < stopping:
-                        early_stopping_counter += 1
-                    l = loss.item()
-                    if early_stopping_counter > 10:
-                        break
-            
-            mask = mask.squeeze().cpu().detach().numpy()
-            imp = torch.tensor(self.filterbank.get_filter_response(mask))
-
-            masks.append(imp)
-            masks_response.append(mask)
-
-        return mask, masks_response
+same time different frequencies and filtered in LP or HP at cutoff frequencies of 3Hz and 5Hz
+model CNN_1
 
 
+Train_2 and Test_2
+fs = 16, T = 1s
+freqs_0 = [2]
+freqs_1 = [6] 
+times_0 = [0.3]
+times_1 = [0.7]
+ampls = [1]
+
+different times and different frequencies wihtout filtering
+model CNN_2
+
+Train_3 and Test_3
+fs = 100, T = 1s
+freqs_0 = [8]
+freqs_1 = [30] 
+times_0 = [0.3]
+times_1 = [0.7]
+ampls = [1]
+
+different times and different frequencies wihtout filtering
+model CNN_3
+
+Train_4 and Test_4
+fs = 1000, T = 1s
+freqs_0 = [80]
+freqs_1 = [300] 
+times_0 = [0.3]
+times_1 = [0.7]
+ampls = [1]
+
+Train_5 and Test_5
+fs = 1000, T = 1s
+freqs_0 = [50, 80, 200]     # salient frequencies
+freqs_1 = [50, 200, 300]    # salient frequencies
+times_0 = [0.5, 0.3, 0.2]   # salient times
+times_1 = [0.5, 0.2, 0.7]   # salient times
+ampls_0 = [0.7, 1, 0.5]     # amplitudes
+ampls_1 = [0.7, 0.5, 1]     # amplitudes
+
+
+
+,test_loss,test_acc,test_f1,test_ck,test_pr,test_rc,test_macc,test_mf1,dataset,fold
+3,0.652019202709198,0.7825608849525452,0.7699329853057861,,0.8174565434455872,0.7825608849525452,0.6089048385620117,0.5872266888618469,sleepedf,-1
+5,0.6367349624633789,0.7891740202903748,0.7770977020263672,,0.8213592171669006,0.7891740202903748,0.6171734929084778,0.5931077599525452,sleepedf,-1
+7,0.664152979850769,0.7848187685012817,0.7713892459869385,,0.8096966743469238,0.7848187685012817,0.6065120100975037,0.5863180756568909,sleepedf,-1
+9,0.6200340390205383,0.7966159582138062,0.7862032651901245,,0.8251320123672485,0.7966159582138062,0.6312546133995056,0.6068748235702515,sleepedf,-1
+11,0.6423963904380798,0.7937818765640259,0.7844288349151611,,0.8267873525619507,0.7937818765640259,0.6348758339881897,0.6115312576293945,sleepedf,-1
+13,0.6203882098197937,0.7944850921630859,0.783698320388794,,0.8237370252609253,0.7944850921630859,0.6153886318206787,0.5926914811134338,sleepedf,-1
+15,0.6162753105163574,0.7911107540130615,0.7793785929679871,,0.818520188331604,0.7911107540130615,0.6307953000068665,0.607387900352478,sleepedf,-1
+17,0.6852311491966248,0.7882649302482605,0.7755666971206665,,0.8152202367782593,0.7882649302482605,0.6197024583816528,0.5933769345283508,sleepedf,-1
+19,0.6028798222541809,0.7998854517936707,0.7895393967628479,,0.8257155418395996,0.7998854517936707,0.6356124877929688,0.6118862628936768,sleepedf,-1
+21,0.6650964021682739,0.788787841796875,0.781341552734375,,0.825473964214325,0.788787841796875,0.6413893699645996,0.6154759526252747,sleepedf,-1
 
 
