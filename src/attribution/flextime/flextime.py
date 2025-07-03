@@ -103,9 +103,9 @@ class FLEXtimeMask():
     def fit(self,
             data,
             time_dim: int = -1,
-            n_epoch: int = 500,
+            n_epoch: int = 250,
             learning_rate: float = 1e-2,
-            keep_ratio: float = 0.05,
+            keep_ratio: float = 0.01,
             reg_factor_init: float = 1.0,
             reg_factor_dilation: float = 1.0,
             time_reg_strength: float = 0.0,
@@ -117,8 +117,12 @@ class FLEXtimeMask():
         self.model.eval()
         early_stopping_counter = 0
 
+        if len(data.shape) == 3:
+            data = data.unsqueeze(0)
+        data = data.float().to(self.device)
+
         with torch.no_grad():
-            target = self.model(data.float().to(self.device))
+            target = self.model(data)
             target = torch.nn.functional.softmax(target, dim=1)
             if use_only_max:
                 target = torch.argmax(target, dim=1)
@@ -126,7 +130,7 @@ class FLEXtimeMask():
         # Initialize mask
         mask_shape = torch.tensor(data.shape)
         mask_shape[time_dim] = 1
-        mask = (0.5 * torch.ones((*mask_shape, self.nfilters), device=self.device)).detach()
+        mask = (0.1 * torch.ones((*mask_shape, self.nfilters), device=self.device)).detach()
         mask.requires_grad_()
 
         optimizer = torch.optim.Adam([mask], lr=learning_rate)

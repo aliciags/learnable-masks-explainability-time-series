@@ -45,15 +45,15 @@ if __name__ == '__main__':
 
 
     # Train the model
-    # best_checkpoint = train(
-    #     datasets = datamodule,
-    #     model_class = model_class,
-    #     model_config = network_config,
-    #     checkpoint_path = checkpoint_path,
-    #     batch_size = 128,
-    #     max_epochs = 50,
-    #     resume = False
-    # )
+    best_checkpoint = train(
+        datasets = datamodule,
+        model_class = model_class,
+        model_config = network_config,
+        checkpoint_path = checkpoint_path,
+        batch_size = 128,
+        max_epochs = 50,
+        resume = False
+    )
 
     best_checkpoint = "fold=-1-epoch=19-step=19898-val_acc=0.83.ckpt"
 
