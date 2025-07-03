@@ -82,3 +82,72 @@ def plot_wavelet_filters(wavelet_name, figsize=(12, 8), plot_frequency_response=
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     
     return fig, axes
+
+
+def plot_scaleogram_wav_heatmap(signal, attribution, label:int, fs=100, wavelet='db1'):
+    # print(attribution.shape)
+
+    # Compute frequency bands
+    freq_bands = [fs /  (2 ** (j + 1)) for j in range(len(attribution[0]))]   # bands
+    freq_bands.append(0)                                        # lowest frequency
+    freq_bands = freq_bands[::-1]                               # reverse the order
+    # print(freq_bands)
+
+    time = np.linspace(0, signal / fs, signal)
+
+    # normalize attribution scores to [0,1]
+    attribution = np.abs(attribution)
+    attr_norm = (attribution - attribution.min()) / (attribution.max() - attribution.min() + 1e-10)
+
+    # Create a 2D grid for heatmap
+    time_grid, freq_grid = np.meshgrid(time, freq_bands)
+    # make attr x one dim smaller
+    attr_norm = attr_norm[1:,:]
+
+    # Plot the scaleogram
+    plt.figure(figsize=(10, 6))
+    plt.pcolormesh(time_grid, freq_grid, attr_norm.T, shading='auto', cmap='Greens')
+    plt.colorbar(label="Normalized Attribution Score")
+    plt.title(f'Attributions of class {label} learned through wavelet {wavelet}')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Frequency (Hz)')
+
+    plt.savefig(f'/Users/alicia/Documents/Master/TFM/master_thesis/graphics/attr_5_{wavelet}_{label}.png')
+
+    plt.show()
+
+# plot scaleograms
+
+def plot_dwt_scaleogram(coeffs, w='db1', fs=16, label=0):
+    """
+    coeffs: list of coefficients
+    fs: sampling frequency
+    """
+    # Create a figure
+    plt.figure(figsize=(10, 6))
+
+    # compute the frequency bands
+    freq_bands = [fs / (2 ** (j + 1)) for j in range(len(coeffs[0]))]   # bands
+    freq_bands.append(0)                                             # lowest frequency
+    freq_bands = freq_bands[::-1]                                    # reverse the order
+    
+    scaleogram = np.array(coeffs)
+    # scaleogram = scaleogram[:, :]
+    scaleogram = np.abs(scaleogram)
+    
+    # normalize the scaleogram
+    scaleogram = (scaleogram - np.min(scaleogram)) / (np.max(scaleogram) - np.min(scaleogram) + 1e-10)
+
+    # Create a meshgrid for time and frequency
+    time = np.linspace(0, 1, fs)
+    time = np.concatenate([time, [time[-1] + (1/fs)]])
+
+    plt.figure(figsize=(10, 6))
+    plt.pcolormesh(time, freq_bands, scaleogram.T, shading='auto', cmap='viridis')
+    plt.colorbar(label='Magnitude')
+    plt.title(f'Scaleogram of class {label} of wavelet {w}')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Frequency [Hz]')
+
+    plt.tight_layout()
+    plt.show()

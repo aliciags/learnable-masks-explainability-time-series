@@ -22,8 +22,8 @@ ampls_0 = [1]     # amplitudes
 ampls_1 = [1]     # amplitudes
 
 # folders for train and test data
-folder_train = "./data/synthetic/train_1/"
-folder_test = "./data/synthetic/test_1/"
+folder_train = "./data/synthetic/train/"
+folder_test = "./data/synthetic/test/"
 
 # create the folder if it does not exist
 if not os.path.exists(folder_train):
